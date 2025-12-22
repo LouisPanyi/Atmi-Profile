@@ -1,0 +1,478 @@
+"use server";
+
+import { sql } from "@vercel/postgres";
+import { revalidatePath } from "next/cache";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { del } from "@vercel/blob";
+import bcrypt from "bcrypt";
+
+async function checkNewsPermission() {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
+
+  if (role !== "admin" && role !== "news_writer") {
+    throw new Error("Unauthorized: Akses ditolak. Anda tidak memiliki izin.");
+  }
+}
+
+async function checkAdminOnly() {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "admin") {
+    throw new Error("Unauthorized: Akses ditolak. Hanya Admin yang diizinkan.");
+  }
+}
+
+function generateSlug(title: string) {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "") + "-" + Date.now().toString().slice(-4);
+}
+
+export async function createNews(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    // Pastikan user login
+    if (!session || !session.user?.id) {
+      throw new Error("Unauthorized");
+    }
+
+    const title = formData.get("title") as string;
+    const sections = formData.get("sections") as string;
+
+    // Generate Slug
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "") + "-" + Math.floor(Math.random() * 10000);
+
+    // A. INSERT BERITA (dengan author_id)
+    // RETURNING id berguna untuk mendapatkan ID berita yang baru dibuat
+    const result = await sql`
+      INSERT INTO news (title, slug, sections, author_id, created_at)
+      VALUES (${title}, ${slug}, ${sections}, ${session.user.id}, NOW())
+      RETURNING id
+    `;
+
+    const newNewsId = result.rows[0].id;
+
+    // B. CATAT LOG (CREATE)
+    await sql`
+        INSERT INTO news_logs (news_id, user_id, action, details)
+        VALUES (${newNewsId}, ${session.user.id}, 'CREATE', ${title})
+    `;
+
+    revalidatePath("/admin/berita");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: "Gagal membuat berita." };
+  }
+}
+
+// 2. UPDATE NEWS
+export async function updateNews(id: string, formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.id) throw new Error("Unauthorized");
+
+    const title = formData.get("title") as string;
+    const sections = formData.get("sections") as string;
+
+    // A. UPDATE BERITA
+    await sql`
+      UPDATE news 
+      SET title = ${title}, sections = ${sections}
+      WHERE id = ${id}
+    `;
+
+    // B. CATAT LOG (UPDATE)
+    await sql`
+        INSERT INTO news_logs (news_id, user_id, action, details)
+        VALUES (${id}, ${session.user.id}, 'UPDATE', ${title})
+    `;
+
+    revalidatePath("/admin/berita");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: "Gagal update berita." };
+  }
+}
+
+// 3. DELETE NEWS
+export async function deleteNews(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.id) throw new Error("Unauthorized");
+
+    const id = formData.get("id") as string;
+
+    // Ambil judul dulu sebelum dihapus untuk log
+    const { rows } = await sql`SELECT title FROM news WHERE id=${id}`;
+    const deletedTitle = rows[0]?.title || "Unknown Title";
+
+    await sql`DELETE FROM news WHERE id=${id}`;
+
+    await sql`
+        INSERT INTO news_logs (news_id, user_id, action, details)
+        VALUES (${id}, ${session.user.id}, 'DELETE', ${deletedTitle})
+    `;
+
+    revalidatePath("/admin/berita");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: "Gagal menghapus berita." };
+  }
+}
+
+// ==========================================
+// 3. USER ACTIONS (CRUD User)
+// Akses: HANYA Admin
+// ==========================================
+
+export async function updateUserRole(formData: FormData) {
+  await checkAdminOnly(); // KETAT: Hanya Admin
+
+  const id = formData.get("id") as string;
+  const newRole = formData.get("newRole") as string;
+
+  if (!['admin', 'news_writer', 'user'].includes(newRole)) {
+    throw new Error("Role tidak valid.");
+  }
+
+  try {
+    await sql`
+      UPDATE users
+      SET role = ${newRole}
+      WHERE id = ${id}
+    `;
+    revalidatePath("/admin/users");
+  } catch (error) {
+    console.error("Update Role Error:", error);
+    throw new Error("Gagal update role.");
+  }
+}
+
+// 1. CREATE USER (Admin Only)
+export async function createUser(formData: FormData) {
+  try {
+    // Pastikan yang create adalah admin
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "admin") {
+      throw new Error("Unauthorized");
+    }
+
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const role = formData.get("role") as string;
+
+    // 1. Cek apakah email sudah ada
+    const existingUser = await sql`SELECT id FROM users WHERE email=${email}`;
+    if (existingUser.rows.length > 0) {
+      return { success: false, message: "Email sudah terdaftar." };
+    }
+
+    // 2. Hash Password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 3. Insert ke DB
+    await sql`
+      INSERT INTO users (name, email, password, role, created_at)
+      VALUES (${name}, ${email}, ${hashedPassword}, ${role}, NOW())
+    `;
+
+    revalidatePath("/admin/users");
+    return { success: true };
+
+  } catch (error) {
+    console.error("Create User Error:", error);
+    return { success: false, message: "Gagal membuat user." };
+  }
+}
+
+// 2. DELETE USER (Admin Only)
+export async function deleteUser(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "admin") {
+      throw new Error("Unauthorized");
+    }
+
+    const id = formData.get("id") as string;
+
+    // Mencegah admin menghapus dirinya sendiri
+    if (session.user.id === id) {
+      return { success: false, message: "Anda tidak bisa menghapus akun sendiri di sini." };
+    }
+
+    await sql`DELETE FROM users WHERE id=${id}`;
+    revalidatePath("/admin/users");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Delete User Error:", error);
+    return { success: false, message: "Gagal menghapus user." };
+  }
+}
+
+// ==========================================
+// PROFILE (SELF EDIT)
+// ==========================================
+
+export async function updateProfile(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      throw new Error("Unauthorized");
+    }
+
+    const name = formData.get("name") as string;
+    const oldPassword = formData.get("oldPassword") as string;
+    const newPassword = formData.get("newPassword") as string;
+    const email = session.user.email;
+
+    // 1. Ambil data user saat ini (termasuk password hash) dari DB
+    const { rows } = await sql`SELECT password FROM users WHERE email = ${email}`;
+    if (rows.length === 0) return { success: false, message: "User tidak ditemukan." };
+
+    const currentUser = rows[0];
+
+    // 2. Logic Update
+    if (newPassword && newPassword.trim() !== "") {
+
+      if (!oldPassword) {
+        return { success: false, message: "Harap masukkan password lama untuk konfirmasi." };
+      }
+
+      const isMatch = await bcrypt.compare(oldPassword, currentUser.password);
+      if (!isMatch) {
+        return { success: false, message: "Password lama salah!" };
+      }
+
+      if (oldPassword === newPassword) {
+        return { success: false, message: "Password baru tidak boleh sama dengan password lama." };
+      }
+
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      await sql`
+        UPDATE users 
+        SET name = ${name}, password = ${hashedNewPassword}
+        WHERE email = ${email}
+      `;
+
+    } else {
+      await sql`
+        UPDATE users 
+        SET name = ${name}
+        WHERE email = ${email}
+      `;
+    }
+
+    revalidatePath("/admin/profile");
+    return { success: true };
+
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    return { success: false, message: "Terjadi kesalahan sistem." };
+  }
+}
+
+// ==========================================
+// Kontak Form
+// ==========================================
+
+export async function sendContactMessage(formData: FormData) {
+  try {
+    // 1. CEK SESSION
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return { success: false, message: "Akses ditolak. Harap login terlebih dahulu." };
+    }
+
+    // 2. CEK ROLE (Hanya 'user' / Google Login yang boleh)
+    // Admin dan News Writer akan ditolak di sini
+    if (session.user.role !== "user") {
+      return {
+        success: false,
+        message: "Maaf, Admin dan Penulis tidak perlu mengisi form kontak."
+      };
+    }
+
+    // 3. Ambil Data Form
+    const phone = formData.get("phone") as string;
+    const message = formData.get("message") as string;
+
+    // Ambil data aman dari session
+    const senderName = session.user.name;
+    const senderEmail = session.user.email;
+    const senderImage = session.user.image; // Opsional: simpan foto profil google
+
+    if (!message || message.trim() === "") {
+      return { success: false, message: "Pesan tidak boleh kosong." };
+    }
+
+    // 4. Simpan ke Database
+    await sql`
+      INSERT INTO messages (name, email, phone, message, user_image, created_at)
+      VALUES (${senderName}, ${senderEmail}, ${phone}, ${message}, ${senderImage}, NOW())
+    `;
+
+    return { success: true, message: "Pesan berhasil dikirim!" };
+
+  } catch (error) {
+    console.error("Contact Error:", error);
+    return { success: false, message: "Gagal mengirim pesan." };
+  }
+}
+
+// ==========================================
+// Product Actions
+// ==========================================
+
+export async function createProduct(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "admin") {
+      return { success: false, message: "Akses ditolak. Hanya Admin." };
+    }
+
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const category = formData.get("category") as string;
+    const imagesRaw = formData.get("images") as string;
+    const featuresRaw = formData.get("features") as string;
+    const specsRaw = formData.get("specifications") as string;
+
+    if (!name || !category || !imagesRaw) {
+      return { success: false, message: "Nama, Kategori, dan Gambar wajib diisi." };
+    }
+
+    let images, features, specifications;
+    try {
+      images = JSON.parse(imagesRaw);
+      features = JSON.parse(featuresRaw);
+      specifications = JSON.parse(specsRaw);
+    } catch (e) {
+      return { success: false, message: "Format data JSON tidak valid." };
+    }
+
+    if (!Array.isArray(images) || images.length === 0) {
+      return { success: false, message: "Minimal harus ada 1 gambar produk." };
+    }
+
+    await sql`
+      INSERT INTO products (name, description, category, images, features, specifications, created_at, updated_at)
+      VALUES (${name}, ${description}, ${category}, ${JSON.stringify(images)}, ${JSON.stringify(features)}, ${JSON.stringify(specifications)}, NOW(), NOW())
+    `;
+
+    revalidatePath("/admin/products");
+    revalidatePath("/produk");
+
+    return { success: true, message: "Produk berhasil ditambahkan!" };
+
+  } catch (error) {
+    console.error("Create Product Error:", error);
+    return { success: false, message: "Gagal menyimpan produk ke database." };
+  }
+}
+
+// BARU: Update Product
+export async function updateProduct(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "admin") {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    const id = formData.get("id") as string;
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const category = formData.get("category") as string;
+    const imagesRaw = formData.get("images") as string;
+    const featuresRaw = formData.get("features") as string;
+    const specsRaw = formData.get("specifications") as string;
+
+    // Parsing JSON
+    const images = JSON.parse(imagesRaw);
+    const features = JSON.parse(featuresRaw);
+    const specifications = JSON.parse(specsRaw);
+
+    await sql`
+      UPDATE products 
+      SET 
+        name = ${name}, 
+        description = ${description}, 
+        category = ${category}, 
+        images = ${JSON.stringify(images)}, 
+        features = ${JSON.stringify(features)}, 
+        specifications = ${JSON.stringify(specifications)},
+        updated_at = NOW()
+      WHERE id = ${id}
+    `;
+
+    revalidatePath("/admin/products");
+    revalidatePath("/produk");
+
+    return { success: true, message: "Produk berhasil diperbarui!" };
+
+  } catch (error) {
+    console.error("Update Product Error:", error);
+    return { success: false, message: "Gagal update produk." };
+  }
+}
+
+// UPDATE: Delete Product (Termasuk Hapus Blob)
+export async function deleteProduct(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "admin") {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    const id = formData.get("id") as string;
+
+    // 1. Ambil data gambar dari database SEBELUM menghapus record
+    const { rows } = await sql`SELECT images FROM products WHERE id=${id}`;
+
+    if (rows.length > 0) {
+      const product = rows[0];
+
+      // Parsing gambar
+      let images = [];
+      try {
+        images = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+      } catch (e) {
+        console.error("Error parsing images for deletion", e);
+      }
+
+      // 2. Kumpulkan URL untuk dihapus dari Blob Storage
+      if (Array.isArray(images) && images.length > 0) {
+        const urlsToDelete = images.map((img: any) => img.url).filter((url: string) => url);
+
+        // Hapus file dari Vercel Blob
+        if (urlsToDelete.length > 0) {
+          await del(urlsToDelete);
+        }
+      }
+    }
+
+    // 3. Hapus record dari Database
+    await sql`DELETE FROM products WHERE id=${id}`;
+
+    revalidatePath("/admin/products");
+    revalidatePath("/produk");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Delete Product Error:", error);
+    return { success: false, message: "Gagal menghapus produk." };
+  }
+}

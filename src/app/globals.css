@@ -24,3 +24,140 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Di file CSS global atau dalam komponen */
+.youtube-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+}
+
+.youtube-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.video-overlay:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* CSS untuk menyembunyikan rekomendasi video */
+.youtube-container .ytp-ce-element {
+  display: none !important;
+}
+
+.youtube-container .ytp-pause-overlay {
+  display: none !important;
+}
+
+.youtube-container .ytp-watch-next-autoplay {
+  display: none !important;
+}
+
+/* Di file CSS global atau dalam komponen */
+.coating-section {
+  scroll-margin-top: 100px;
+}
+
+.coating-section button {
+  transition: all 0.3s ease;
+}
+
+.coating-section button:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.detail-card {
+  transition: all 0.3s ease;
+}
+
+.detail-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Di file CSS global atau dalam komponen */
+.coating-detail-section {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.coating-card {
+  transition: all 0.3s ease;
+}
+
+.coating-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.section-toggle {
+  transition: all 0.2s ease;
+}
+
+.section-toggle:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.process-stage {
+  transition: all 0.2s ease;
+}
+
+.process-stage:hover {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.coating-section {
+  transition: all 0.3s ease;
+}
+
+.coating-section-header {
+  transition: all 0.2s ease;
+}
+
+.coating-section-header:hover {
+  transform: translateY(-1px);
+}
+
+.content-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.detail-section {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .coating-section {
+    margin-bottom: 1rem;
+  }
+}
