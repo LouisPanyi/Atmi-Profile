@@ -1,7 +1,6 @@
-// src/app/kontak/page.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react'; // Hapus useState
 import Head from 'next/head';
 import Hero from '@/components/kontak/section/hero';
 import QuickActions from '@/components/kontak/section/quick-action';
@@ -14,10 +13,8 @@ import ContactForm from '@/components/kontak/contact-form';
 import Breadcrumb from '@/components/breadcrumb';
 
 export default function ContactPage() {
-  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setIsVisible(true);
     // Override title dynamically
     document.title = "Kontak | PT ATMI SOLO - Precision Manufacturing & Engineering";
     

@@ -1,31 +1,28 @@
-import { sql } from "@vercel/postgres";
-import ProductForm from "@/components/admin/products/product-form";
+// src/app/(admin)/admin/products/edit/[id]/page.tsx
 import { notFound } from "next/navigation";
+import ProductForm from "@/components/admin/products/product-form"; //
+import { fetchProductById } from "@/lib/data"; //
 
 export const dynamic = "force-dynamic";
 
-export default async function EditProductPage({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: { id: string };
+}
+
+export default async function EditProductPage({ params }: PageProps) {
   const { id } = params;
 
-  // Fetch data produk berdasarkan ID
-  const { rows } = await sql`
-    SELECT id, name, description, category, images, features, specifications 
-    FROM products 
-    WHERE id = ${id}
-  `;
+  // 1. Ambil data menggunakan fungsi yang sudah kita buat di data.ts
+  // Fungsi ini sudah mengembalikan tipe data 'Product' yang benar (atau null)
+  const product = await fetchProductById(id);
 
-  if (rows.length === 0) {
+  // 2. Validasi jika produk tidak ditemukan
+  if (!product) {
     notFound();
   }
 
-  const product = rows[0];
-
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Kirim data produk sebagai props 'initialData' ke form.
-        Form akan mendeteksi ini sebagai mode Edit.
-      */}
-      {/* @ts-ignore: Next.js SQL Row type mismatch fix */}
       <ProductForm initialData={product} />
     </div>
   );

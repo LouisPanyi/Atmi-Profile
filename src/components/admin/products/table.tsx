@@ -6,16 +6,9 @@ import { deleteProduct } from "@/lib/actions";
 import { Trash2, Edit, Package } from "lucide-react";
 import ConfirmationModal from "@/components/admin/confirmation-modal"; 
 import Link from "next/link";
+import type { ProductTableRow } from "@/lib/definitions"; //
 
-interface Product {
-    id: string;
-    name: string;
-    category: string;
-    images: any; // JSONB
-    created_at: string;
-}
-
-export default function ProductsTable({ products }: { products: Product[] }) {
+export default function ProductsTable({ products }: { products: ProductTableRow[] }) {
     const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -69,23 +62,18 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                             </tr>
                         ) : (
                             products.map((product) => {
-                                // Parsing Images (Handle jika JSONB string atau object)
-                                let thumb = null;
-                                try {
-                                    // Jika database mengembalikan string, parse. Jika object, langsung pakai.
-                                    const imgs = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
-                                    // Ambil gambar yang featured, atau gambar pertama
-                                    const featured = Array.isArray(imgs) ? imgs.find((i: any) => i.featured) || imgs[0] : null;
-                                    thumb = featured?.url;
-                                } catch (e) { }
+                                // Data 'images' sekarang sudah bertipe array ProductImage[]
+                                // Kita cari gambar 'featured' atau ambil yang pertama
+                                const featuredImg = product.images.find(img => img.featured) || product.images[0];
+                                const thumbUrl = featuredImg?.url;
 
                                 return (
                                     <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                                    {thumb ? (
-                                                        <img src={thumb} alt={product.name} className="w-full h-full object-cover" />
+                                                    {thumbUrl ? (
+                                                        <img src={thumbUrl} alt={product.name} className="w-full h-full object-cover" />
                                                     ) : (
                                                         <Package className="text-gray-300 w-6 h-6" />
                                                     )}
@@ -99,6 +87,7 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-gray-500">
+                                            {/* created_at bertipe Date, jadi kita format langsung */}
                                             {new Date(product.created_at).toLocaleDateString("id-ID", {
                                                 day: "numeric", month: "short", year: "numeric"
                                             })}
@@ -112,7 +101,6 @@ export default function ProductsTable({ products }: { products: Product[] }) {
                                                 >
                                                     <Edit size={18} />
                                                 </Link>
-                                                {/* Tombol Delete */}
                                                 <button
                                                     onClick={() => handleDeleteClick(product.id)}
                                                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createUser } from "@/lib/actions"; // Import action baru
+import { createUser } from "@/lib/actions";
 import { Save, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
@@ -24,7 +24,8 @@ export default function CreateUserPage() {
       } else {
         alert(result?.message || "Gagal membuat user.");
       }
-    } catch (error) {
+    } catch {
+      // PERBAIKAN: Hapus '(error)' karena tidak digunakan
       alert("Terjadi kesalahan sistem.");
     } finally {
       setLoading(false);

@@ -1,11 +1,10 @@
 import { sql } from "@vercel/postgres";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image"; // PERBAIKAN: Import Image
 import { Clock, User, ChevronRight, Home, ArrowRight } from "lucide-react";
-// Pastikan path ini sesuai dengan lokasi komponen ShareButtons Anda
 import ShareButtons from "@/components/berita/share-buttons";
 
-// --- TIPE ---
 interface Section {
   image?: string;
   caption?: string;
@@ -16,14 +15,12 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-// --- HELPER: Render Teks Paragraf (Sesuai Kode Anda) ---
 function TextRenderer({ text, isFirstSection = false }: { text?: string, isFirstSection?: boolean }) {
   if (!text) return null;
   const paragraphs = text.split('\n').filter(p => p.trim() !== "");
   return (
     <div className="text-gray-900 font-serif text-lg md:text-[1.15rem] leading-relaxed">
       {paragraphs.map((paragraph, idx) => (
-        // Menggunakan class sesuai permintaan Anda (text-justify, break-all, whitespace-pre-wrap)
         <p key={idx} className="mb-6 text-justify break-words break-all whitespace-pre-wrap">
           {isFirstSection && idx === 0 ? (
             <span>
@@ -41,17 +38,13 @@ function TextRenderer({ text, isFirstSection = false }: { text?: string, isFirst
 
 export default async function NewsDetailPage({ params }: Props) {
   const { slug } = await params;
-  
-  // 1. Decode Slug
   const decodedSlug = decodeURIComponent(slug);
 
-  // 2. FETCH DATA BY SLUG
   const { rows } = await sql`SELECT * FROM news WHERE slug=${decodedSlug}`;
   const news = rows[0];
 
   if (!news) notFound();
 
-  // 3. FETCH RELATED NEWS (Random 3 berita, kecuali berita ini)
   const relatedRes = await sql`
     SELECT id, title, slug, created_at, sections 
     FROM news 
@@ -61,16 +54,13 @@ export default async function NewsDetailPage({ params }: Props) {
   `;
   const relatedNews = relatedRes.rows;
 
-  // 4. Parsing Sections
   let sections: Section[] = [];
-  try { sections = JSON.parse(news.sections); } catch (e) {}
+  try { sections = JSON.parse(news.sections); } catch {} // PERBAIKAN: Hapus (e)
 
-  // Format Tanggal
   const dateObj = new Date(news.created_at);
   const dateStr = dateObj.toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const timeStr = dateObj.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' });
 
-  // Share Links
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const shareUrl = `${baseUrl}/berita/${slug}`;
   
@@ -78,7 +68,6 @@ export default async function NewsDetailPage({ params }: Props) {
     <div className="min-h-screen bg-white font-sans">
       <div className="h-24 bg-blue-900"></div>
       
-      {/* BREADCRUMB */}
       <div className="bg-gray-50 border-b border-gray-100 py-3 sticky top-20 z-10 md:static">
         <div className="container mx-auto px-4 md:px-0 max-w-[800px]">
           <nav className="flex items-center gap-2 text-xs md:text-sm text-gray-500 overflow-hidden whitespace-nowrap">
@@ -95,7 +84,6 @@ export default async function NewsDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* HEADER ARTIKEL */}
       <div className="container mx-auto px-4 md:px-0 max-w-[800px] mt-8 mb-8 text-center">
         <div className="flex justify-center items-center gap-3 mb-4 relative">
           <span className="text-green-600 font-bold uppercase tracking-wider text-xs md:text-sm bg-green-50 px-3 py-1 rounded-full">
@@ -121,14 +109,21 @@ export default async function NewsDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* KONTEN ARTIKEL */}
       <div className="container mx-auto px-4 md:px-0 max-w-[750px]">
         {sections.map((section, index) => (
           <div key={index} className="mb-10 last:mb-0">
             {section.image && (
               <figure className="mb-8 w-full">
-                <div className="w-full overflow-hidden rounded-lg shadow-sm border border-gray-100">
-                  <img src={section.image} alt={section.caption || news.title} className="w-full h-auto object-cover"/>
+                <div className="w-full overflow-hidden rounded-lg shadow-sm border border-gray-100 relative">
+                  {/* PERBAIKAN: Gunakan Next Image dengan width/height 0 + sizes untuk auto height responsive */}
+                  <Image 
+                    src={section.image} 
+                    alt={section.caption || news.title} 
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
                 {section.caption && (
                   <figcaption className="text-xs text-gray-500 mt-2 text-left italic border-l-2 border-green-500 pl-3">
@@ -143,12 +138,10 @@ export default async function NewsDetailPage({ params }: Props) {
           </div>
         ))}
 
-        {/* FOOTER: Share & Copy Link */}
         <ShareButtons title={news.title} url={shareUrl} />
 
       </div>
 
-      {/* BERITA LAINNYA (Rekomendasi Random) */}
       {relatedNews.length > 0 && (
         <div className="bg-gray-50 py-16 border-t border-gray-200">
           <div className="container mx-auto px-4 md:px-0 max-w-[900px]">
@@ -162,7 +155,7 @@ export default async function NewsDetailPage({ params }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedNews.map((item) => {
                 let itemSections = [];
-                try { itemSections = JSON.parse(item.sections); } catch (e){}
+                try { itemSections = JSON.parse(item.sections); } catch {} // PERBAIKAN: Hapus (e)
                 const thumb = itemSections[0]?.image || null;
                 const recDate = new Date(item.created_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' });
                 
@@ -171,7 +164,14 @@ export default async function NewsDetailPage({ params }: Props) {
                     <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col border border-gray-100">
                       <div className="h-40 bg-gray-200 overflow-hidden relative">
                         {thumb ? (
-                          <img src={thumb} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                          // PERBAIKAN: Gunakan Next Image dengan Fill untuk thumbnail
+                          <Image 
+                            src={thumb} 
+                            alt={item.title} 
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100 text-xs">No Image</div>
                         )}

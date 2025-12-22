@@ -7,15 +7,6 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { del } from "@vercel/blob";
 import bcrypt from "bcrypt";
 
-async function checkNewsPermission() {
-  const session = await getServerSession(authOptions);
-  const role = session?.user?.role;
-
-  if (role !== "admin" && role !== "news_writer") {
-    throw new Error("Unauthorized: Akses ditolak. Anda tidak memiliki izin.");
-  }
-}
-
 async function checkAdminOnly() {
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== "admin") {

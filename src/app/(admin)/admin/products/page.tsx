@@ -1,21 +1,16 @@
 import Link from "next/link";
-import { sql } from "@vercel/postgres";
 import { Plus } from "lucide-react";
 import ProductsTable from "@/components/admin/products/table";
+import { fetchAdminProducts } from "@/lib/data"; //
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
-  // Ambil data produk terbaru
-  const { rows: products } = await sql`
-    SELECT id, name, category, images, created_at 
-    FROM products 
-    ORDER BY created_at DESC
-  `;
+  // 'products' otomatis bertipe ProductTableRow[]
+  const products = await fetchAdminProducts();
 
   return (
     <div className="space-y-6">
-      {/* Header Halaman */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Manajemen Produk</h1>
@@ -31,9 +26,8 @@ export default async function AdminProductsPage() {
         </Link>
       </div>
 
-      {/* Tabel Produk */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* @ts-ignore: Next.js SQL Row type mismatch fix */}
+        {/* Komponen tabel harus menerima prop interface ProductTableRow */}
         <ProductsTable products={products} />
       </div>
     </div>

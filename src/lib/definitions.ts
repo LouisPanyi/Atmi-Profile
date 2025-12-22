@@ -1,3 +1,25 @@
+// src/lib/definitions.ts
+import type { ProductImage } from "@/data/product/product-types"; //
+
+// Interface untuk baris tabel produk di Admin (hasil query DB)
+export interface ProductTableRow {
+  id: string;
+  name: string;
+  category: string;
+  images: ProductImage[];
+  created_at: Date;
+}
+
+// Anda juga bisa memindahkan definisi Product form di sini jika mau
+export interface ProductFormData {
+  name: string;
+  description: string;
+  category: string;
+  images: ProductImage[];
+  features: string[];
+  specifications: Record<string, string>;
+}
+
 export interface Section {
   image?: string;
   caption?: string;

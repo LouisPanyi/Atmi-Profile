@@ -21,8 +21,6 @@ const MACHINE_MECH_CONTACTS = [
   { name: 'Aji', phone: '6281393440750' }
 ] as const;
 
-const WA_DEFAULT_TEXT = 'Halo ATMI SOLO, saya ingin konsultasi.';
-
 export const mainNodes = {
   start: {
     // ... (node 'start' Anda tetap sama)

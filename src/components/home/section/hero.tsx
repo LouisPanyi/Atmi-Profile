@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ArrowRight, Phone, MapPin, ChevronLeft, ChevronRight, Factory, Shield } from 'lucide-react';
+import {  Phone, MapPin, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeroSectionProps {

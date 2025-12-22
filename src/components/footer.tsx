@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 
 export default function Footer() {
-  const [email, setEmail] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownload = (fileName: string, fileType: string) => {
