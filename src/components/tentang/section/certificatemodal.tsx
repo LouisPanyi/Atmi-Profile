@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants, Transition } from "framer-motion";
+import Image from "next/image";
 
 interface CertificateModalProps {
   isOpen: boolean;
@@ -289,7 +290,7 @@ export default function CertificateModal({ isOpen, onClose, fileUrl, title }: Ce
                       willChange: "transform",
                     }}
                   >
-                    <img
+                    <Image
                       src={fileUrl}
                       alt={title}
                       draggable={false}

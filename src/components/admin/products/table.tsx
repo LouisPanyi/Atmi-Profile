@@ -2,13 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image"; 
 import { deleteProduct } from "@/lib/actions";
 import { Trash2, Edit, Package } from "lucide-react";
 import ConfirmationModal from "@/components/admin/confirmation-modal"; 
 import Link from "next/link";
-import type { ProductTableRow } from "@/lib/definitions"; //
+import type { ProductTableRow } from "@/lib/definitions"; // Pastikan menggunakan tipe yang benar jika ada
 
-export default function ProductsTable({ products }: { products: ProductTableRow[] }) {
+// Jika menggunakan interface lokal (sesuaikan dengan definitions.ts jika sudah dipisah)
+interface Product {
+    id: string;
+    name: string;
+    category: string;
+    images: any; 
+    created_at: string;
+}
+
+export default function ProductsTable({ products }: { products: Product[] }) {
     const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -62,18 +72,27 @@ export default function ProductsTable({ products }: { products: ProductTableRow[
                             </tr>
                         ) : (
                             products.map((product) => {
-                                // Data 'images' sekarang sudah bertipe array ProductImage[]
-                                // Kita cari gambar 'featured' atau ambil yang pertama
-                                const featuredImg = product.images.find(img => img.featured) || product.images[0];
-                                const thumbUrl = featuredImg?.url;
+                                let thumb = null;
+                                try {
+                                    const imgs = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+                                    const featured = Array.isArray(imgs) ? imgs.find((i: any) => i.featured) || imgs[0] : null;
+                                    thumb = featured?.url;
+                                } catch (e) { }
 
                                 return (
                                     <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                                    {thumbUrl ? (
-                                                        <img src={thumbUrl} alt={product.name} className="w-full h-full object-cover" />
+                                                {/* Tambahkan relative disini agar Image fill bekerja */}
+                                                <div className="w-12 h-12 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center relative">
+                                                    {thumb ? (
+                                                        <Image 
+                                                            src={thumb} 
+                                                            alt={product.name} 
+                                                            fill
+                                                            className="object-cover"
+                                                            sizes="48px"
+                                                        />
                                                     ) : (
                                                         <Package className="text-gray-300 w-6 h-6" />
                                                     )}
@@ -87,7 +106,6 @@ export default function ProductsTable({ products }: { products: ProductTableRow[
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-gray-500">
-                                            {/* created_at bertipe Date, jadi kita format langsung */}
                                             {new Date(product.created_at).toLocaleDateString("id-ID", {
                                                 day: "numeric", month: "short", year: "numeric"
                                             })}

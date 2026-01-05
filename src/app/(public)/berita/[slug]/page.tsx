@@ -1,7 +1,8 @@
+// src/app/(public)/berita/[slug]/page.tsx
 import { sql } from "@vercel/postgres";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image"; // PERBAIKAN: Import Image
+import Image from "next/image";
 import { Clock, User, ChevronRight, Home, ArrowRight } from "lucide-react";
 import ShareButtons from "@/components/berita/share-buttons";
 
@@ -55,7 +56,7 @@ export default async function NewsDetailPage({ params }: Props) {
   const relatedNews = relatedRes.rows;
 
   let sections: Section[] = [];
-  try { sections = JSON.parse(news.sections); } catch {} // PERBAIKAN: Hapus (e)
+  try { sections = JSON.parse(news.sections); } catch {}
 
   const dateObj = new Date(news.created_at);
   const dateStr = dateObj.toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -115,14 +116,15 @@ export default async function NewsDetailPage({ params }: Props) {
             {section.image && (
               <figure className="mb-8 w-full">
                 <div className="w-full overflow-hidden rounded-lg shadow-sm border border-gray-100 relative">
-                  {/* PERBAIKAN: Gunakan Next Image dengan width/height 0 + sizes untuk auto height responsive */}
+                  {/* FIX: Menggunakan width/height integer eksplisit + w-full h-auto */}
                   <Image 
                     src={section.image} 
                     alt={section.caption || news.title} 
-                    width={0}
-                    height={0}
-                    sizes="100vw"
+                    width={1000}
+                    height={600}
+                    sizes="(max-width: 768px) 100vw, 800px"
                     className="w-full h-auto object-cover"
+                    priority={index === 0} // Prioritaskan gambar pertama
                   />
                 </div>
                 {section.caption && (
@@ -155,16 +157,16 @@ export default async function NewsDetailPage({ params }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedNews.map((item) => {
                 let itemSections = [];
-                try { itemSections = JSON.parse(item.sections); } catch {} // PERBAIKAN: Hapus (e)
+                try { itemSections = JSON.parse(item.sections); } catch {}
                 const thumb = itemSections[0]?.image || null;
                 const recDate = new Date(item.created_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' });
                 
                 return (
                   <Link href={`/berita/${item.slug}`} key={item.id} className="group">
                     <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col border border-gray-100">
-                      <div className="h-40 bg-gray-200 overflow-hidden relative">
+                      {/* Container Relative untuk Fill */}
+                      <div className="h-40 bg-gray-200 overflow-hidden relative w-full">
                         {thumb ? (
-                          // PERBAIKAN: Gunakan Next Image dengan Fill untuk thumbnail
                           <Image 
                             src={thumb} 
                             alt={item.title} 

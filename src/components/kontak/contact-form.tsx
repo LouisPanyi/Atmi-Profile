@@ -15,7 +15,8 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { sendContactMessage } from "@/lib/actions"; // Pastikan import ini ada
+import { sendContactMessage } from "@/lib/actions";
+import Image from "next/image";
 
 // --- KONFIGURASI UPLOAD ---
 type UploadConfig = {
@@ -55,12 +56,6 @@ export default function ContactForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [serverMessage, setServerMessage] = useState<{success: boolean, text: string} | null>(null);
-
-  // Hitung total ukuran file
-  const totalBytes = useMemo(
-    () => files.reduce((sum, f) => sum + f.size, 0),
-    [files]
-  );
 
   // --- VALIDASI ---
   const validateForm = () => {
@@ -242,9 +237,12 @@ export default function ContactForm() {
             onClick={() => signIn('google')} 
             className="flex items-center justify-center gap-3 w-full bg-white border border-gray-300 text-gray-700 font-bold py-3.5 px-6 rounded-xl hover:bg-gray-50 hover:shadow-md transition-all duration-300 group"
         >
-            <img 
+            {/* PERBAIKAN: Menambahkan width dan height */}
+            <Image 
                 src="https://authjs.dev/img/providers/google.svg" 
                 alt="Google Logo" 
+                width={20}
+                height={20}
                 className="w-5 h-5"
             />
             <span className="group-hover:text-gray-900">Masuk dengan Google</span>
@@ -276,7 +274,14 @@ export default function ContactForm() {
                 )}
                 {/* Google Badge Kecil */}
                 <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-sm border border-gray-100" title="Terverifikasi Google">
-                    <img src="https://authjs.dev/img/providers/google.svg" className="w-4 h-4" alt="G" />
+                    {/* PERBAIKAN: Menambahkan width dan height */}
+                    <Image 
+                      src="https://authjs.dev/img/providers/google.svg" 
+                      className="w-4 h-4" 
+                      alt="G"
+                      width={16}
+                      height={16}
+                    />
                 </div>
             </div>
             

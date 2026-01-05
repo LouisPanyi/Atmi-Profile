@@ -1,5 +1,5 @@
-import NextAuth, { DefaultSession } from "next-auth"
-import { JWT } from "next-auth/jwt"
+// File: src/types/next-auth.d.ts
+import type { DefaultSession } from "next-auth"; // type-only to avoid unused-vars
 
 declare module "next-auth" {
   /**
@@ -9,7 +9,7 @@ declare module "next-auth" {
     user: {
       id: string;
       role: string; // Tambahkan ini
-    } & DefaultSession["user"]
+    } & DefaultSession["user"];
   }
 
   /**

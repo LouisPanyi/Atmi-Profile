@@ -3,6 +3,7 @@
 
 import { useMemo, useState } from "react";
 import { MessageSquare, Copy, Check, Phone, Mail, User } from "lucide-react";
+import Image from "next/image";
 
 interface Contact {
   name: string;
@@ -43,9 +44,12 @@ function ContactAvatar({ name, src }: { name: string; src?: string }) {
 
   if (src && !failed) {
     return (
-      <img
+      <Image
         src={src}
         alt={`Foto ${name}`}
+        // FIX: Menambahkan width dan height sesuai dengan class w-12 h-12 (48px)
+        width={48}
+        height={48}
         className="w-12 h-12 rounded-full object-cover border-2 border-white"
         onError={() => setFailed(true)}
       />

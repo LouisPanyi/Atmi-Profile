@@ -1,5 +1,6 @@
+// src/app/(public)/berita/page.tsx
 import Link from "next/link";
-import Image from "next/image"; // PERBAIKAN: Import Image
+import Image from "next/image";
 import { sql } from "@vercel/postgres";
 import { Calendar, ArrowRight, Newspaper } from "lucide-react";
 
@@ -63,7 +64,7 @@ export default async function NewsListPage() {
                   key={item.id}
                   className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col h-full"
                 >
-                  {/* PERBAIKAN: Ganti img dengan Image */}
+                  {/* FIX: Parent div sudah relative & fixed height, Image pakai fill */}
                   <div className="relative h-56 w-full bg-gray-200 overflow-hidden">
                     <Image 
                       src={thumbnail} 

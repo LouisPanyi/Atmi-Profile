@@ -81,7 +81,7 @@ export default function SearchBar({
             exit={{ opacity: 0, height: 0 }}
           >
             <p className="text-sm text-blue-700">
-              Mencari produk dengan kata kunci: <span className="font-semibold">"{query}"</span>
+              Mencari produk dengan kata kunci: <span className="font-semibold">&quot;{query}&quot;</span>
             </p>
           </motion.div>
         )}

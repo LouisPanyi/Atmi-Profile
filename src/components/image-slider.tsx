@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import Image from 'next/image';
 
 interface Image {
   url: string;
@@ -122,7 +123,7 @@ export default function ImageSlider({ images }: ImageSliderProps) {
             className="relative"
             style={{ height: `${containerHeight}px` }}
           >
-            <img
+            <Image
               src={images[currentIndex].url}
               alt={images[currentIndex].alt || `Product image ${currentIndex + 1}`}
               className="w-full h-full object-contain cursor-pointer"
@@ -177,7 +178,7 @@ export default function ImageSlider({ images }: ImageSliderProps) {
               }`}
               aria-label={`Go to slide ${index + 1}`}
             >
-              <img
+              <Image
                 src={image.url}
                 alt={`Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
@@ -236,7 +237,7 @@ export default function ImageSlider({ images }: ImageSliderProps) {
               {modalIndex + 1} / {images.length}
             </div>
 
-            <img
+            <Image
               src={modalImage}
               alt={`Enlarged product ${modalIndex + 1}`}
               className="max-w-full max-h-[90vh] object-contain"

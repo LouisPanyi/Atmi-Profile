@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Plus, Trash, Save, Loader2, UploadCloud, XCircle, X } from "lucide-react";
 import { createNews, updateNews } from "@/lib/actions";
 import ConfirmationModal from "@/components/admin/confirmation-modal"; 
+import Image from "next/image";
 
 interface Section {
   image: string;
@@ -238,7 +239,7 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
                     ) : section.image ? (
                       <div className="relative w-full h-full flex flex-col items-center">
                           <div className="relative w-full h-40 mb-3 rounded-lg overflow-hidden shadow-sm border border-gray-200">
-                               <img src={section.image} alt="Preview" className="object-cover w-full h-full" />
+                               <Image src={section.image} alt="Preview" className="object-cover w-full h-full" />
                           </div>
                           <div className="flex gap-2">
                              <label htmlFor={`file-upload-${idx}`} className="cursor-pointer text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md hover:bg-blue-200 font-medium flex items-center gap-1">

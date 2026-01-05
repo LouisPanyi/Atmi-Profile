@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import Image from 'next/image';
 
 interface ImageSliderWithVideoProps {
   images: string[];
@@ -143,8 +144,8 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
     { id: safeImages.length, src: videoThumbnailUrl, isVideo: true }
   ];
 
-  // Fungsi untuk menangani gambar dengan src kosong
-  const renderImage = (src: string, alt: string) => {
+  // FIX: Menggunakan 'fill' agar Image mengisi parent elementnya (yang sudah relative)
+  const renderImage = (src: string, alt: string, sizes: string = "100vw") => {
     if (!src) {
       return (
         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -152,7 +153,7 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
         </div>
       );
     }
-    return <img src={src} alt={alt} className="w-full h-full object-cover" />;
+    return <Image src={src} alt={alt} fill sizes={sizes} className="object-cover" />;
   };
 
   return (
@@ -169,7 +170,8 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
               transition={{ duration: 0.3 }}
               className="absolute inset-0"
             >
-              {renderImage(safeImages[currentSlide], `Slide ${currentSlide + 1}`)}
+              {/* Main Image */}
+              {renderImage(safeImages[currentSlide], `Slide ${currentSlide + 1}`, "(max-width: 768px) 100vw, 75vw")}
             </motion.div>
           ) : (
             <motion.div
@@ -332,6 +334,7 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
                 <button
                   key={thumbnail.id}
                   onClick={() => goToSlide(slideIndex)}
+                  // Class 'relative' penting untuk Image fill
                   className={`relative flex-shrink-0 rounded-lg overflow-hidden transition-all transform ${
                     isCurrentSlide
                       ? 'ring-4 ring-blue-500 scale-110 shadow-lg'
@@ -340,7 +343,8 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
                   style={{ width: '80px', height: '60px' }}
                   aria-label={`Go to slide ${slideIndex + 1}`}
                 >
-                  {renderImage(thumbnail.src, `Thumbnail ${slideIndex + 1}`)}
+                  {/* Thumbnail Image */}
+                  {renderImage(thumbnail.src, `Thumbnail ${slideIndex + 1}`, "80px")}
                   {isVideoThumbnail && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                       <Play className="w-6 h-6 text-white" />

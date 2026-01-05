@@ -1,9 +1,9 @@
-// src/components/home/section/featured-products.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import Image from "next/image"; 
 
 interface Product {
   id: string;
@@ -35,20 +35,6 @@ const featuredProducts: Product[] = [
       "/images/standard-products/sp4.png",
     ],
   },
-  // {
-  //   id: "Industrial Product",
-  //   name: "Industrial Product",
-  //   category: "Produk Industri",
-  //   description: "Solusi industri lengkap untuk meningkatkan produktivitas dan efisiensi operasional",
-  //   image: "/images/industrial-products.jpg",
-  //   highlights: ["Dibuat untuk industri", "Tahan lama", "Performa tinggi"],
-  //   gallery: [
-  //     "/images/indus-products/ip1.png",
-  //     "/images/indus-products/ip2.png",
-  //     "/images/indus-products/ip3.png",
-  //     "/images/indus-products/ip4.jpg",
-  //   ],
-  // },
   {
     id: "Precision Parts",
     name: "Precision Parts",
@@ -140,12 +126,15 @@ export default function FeaturedProducts({ onProductClick, activeProduct }: Feat
                 viewport={{ once: true }}
               >
                 <div className="h-64 bg-gray-200 overflow-hidden relative">
-                  <img
+                  {/* Menggunakan Next Image */}
+                  <Image
                     src={currentImage}
                     alt={`${product.name} - Gambar ${currentImageIndex + 1}`}
-                    className="w-full h-full object-cover transition-opacity duration-1000"
+                    fill
+                    className="object-cover transition-opacity duration-1000"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 33vw"
                   />
-                  <div className="absolute bottom-2 left-2 flex space-x-1">
+                  <div className="absolute bottom-2 left-2 flex space-x-1 z-10">
                     {product.gallery.map((_, index) => (
                       <div
                         key={index}
@@ -182,4 +171,4 @@ export default function FeaturedProducts({ onProductClick, activeProduct }: Feat
       </div>
     </section>
   );
-}  
+}

@@ -2,6 +2,7 @@
 "use client";
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 interface TimelineItem {
   year: string;
@@ -38,14 +39,16 @@ export default function Timeline({ data }: TimelineProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {milestoneImages.map((item, index) => (
             <div key={index} className="relative">
-              {/* Image container */}
-              <div className="relative overflow-hidden rounded-lg shadow-xl">
-                <img
+              {/* Image container: Moved height class here and kept relative for 'fill' */}
+              <div className="relative w-full h-64 overflow-hidden rounded-lg shadow-xl">
+                <Image
                   src={item.url}
                   alt={item.alt}
+                  fill // Menggunakan fill agar responsif mengisi container
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Best practice untuk performa
                   loading="lazy"
                   onError={handleImgError}
-                  className="w-full h-64 object-cover"
+                  className="object-cover" // Hapus w-full h-64 dari sini
                 />
               </div>
 

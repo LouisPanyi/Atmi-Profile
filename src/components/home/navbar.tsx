@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -48,7 +49,14 @@ export default function Navbar() {
         
         {/* 1. LOGO */}
         <Link href="/" className={`transition-colors flex-shrink-0 ${logoColor}`}>
-          <img src="/images/logo-teks.png" alt="PT ATMI SOLO" className="h-8" />
+          {/* PERBAIKAN DI SINI: Ditambahkan width, height, dan w-auto */}
+          <Image 
+            src="/images/logo-teks.png" 
+            alt="PT ATMI SOLO" 
+            width={150}   // Nilai lebar intrinsik (sesuaikan jika gambar gepeng)
+            height={40}   // Nilai tinggi intrinsik
+            className="h-8 w-auto object-contain" // w-auto menjaga rasio aspek
+          />
         </Link>
 
         {/* 2. MENU TENGAH */}

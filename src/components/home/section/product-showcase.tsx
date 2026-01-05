@@ -2,7 +2,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link"; // Import Link component
+import Link from "next/link";
+import Image from "next/image";
 
 interface Product {
   id: string;
@@ -118,34 +119,41 @@ export default function ProductShowcase({ activeProduct }: { activeProduct: stri
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Gambar Produk */}
           <div>
-            <div className="mb-6">
-              <img
+            {/* FIX: Wrapper div diberi relative & height tetap, Image diberi fill */}
+            <div className="mb-6 relative w-full h-96 rounded-lg overflow-hidden shadow-lg">
+              <Image
                 src={product.gallery[activeImage]}
                 alt={`${product.name} - Gambar ${activeImage + 1}`}
-                className="w-full h-96 object-cover rounded-lg shadow-lg"
+                fill
+                className="object-cover"
               />
             </div>
+            
+            {/* Thumbnail Grid */}
             <div className="grid grid-cols-4 gap-2">
               {product.gallery.map((image, index) => (
                 <div
                   key={index}
-                  className={`cursor-pointer rounded overflow-hidden transition-all duration-200 ${activeImage === index
+                  // FIX: Wrapper div diberi relative & height tetap
+                  className={`relative w-full h-20 cursor-pointer rounded overflow-hidden transition-all duration-200 ${activeImage === index
                     ? "ring-2 ring-blue-500"
                     : "hover:ring-1 hover:ring-gray-300"
                     }`}
                   onClick={() => setActiveImage(index)}
                 >
-                  <img
+                  {/* FIX: Image diberi fill */}
+                  <Image
                     src={image}
                     alt={`${product.name} - Thumbnail ${index + 1}`}
-                    className="w-full h-20 object-cover"
+                    fill
+                    className="object-cover"
                   />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Detail Produk */}
+          {/* Detail Produk - Bagian ini tidak berubah */}
           <div>
             <span className="text-sm font-semibold text-blue-600">
               {product.category}
@@ -199,7 +207,6 @@ export default function ProductShowcase({ activeProduct }: { activeProduct: stri
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              {/* Tombol Hubungi Kami - mengarah ke halaman kontak */}
               <Link
                 href="/produk"
                 className="px-6 py-3 text-white rounded-md hover:bg-blue-700 bg-blue-600 transition duration-300 text-center inline-block"

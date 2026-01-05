@@ -5,6 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Lock, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image'; // Pastikan import Image ditambahkan
 
 // 1. KOMPONEN UTAMA (WRAPPER SUSPENSE)
 export default function LoginPage() {
@@ -48,6 +49,11 @@ function LoginForm() {
       setError("Terjadi kesalahan jaringan.");
       setLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    //SignIn dengan Google biasanya akan redirect otomatis
+    signIn('google', { callbackUrl });
   };
 
   return (
@@ -145,6 +151,36 @@ function LoginForm() {
               )}
             </button>
           </form>
+
+          {/* === BUTTON GOOGLE ADDED HERE === */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Atau masuk dengan</span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all"
+              >
+                {/* PERBAIKAN: Menambahkan properti width dan height */}
+                <Image
+                  src="https://authjs.dev/img/providers/google.svg"
+                  alt="Google Logo"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5"
+                />
+                <span>Google Account</span>
+              </button>
+            </div>
+          </div>
 
           <div className="mt-8 text-center">
             <p className="text-xs text-gray-400">
