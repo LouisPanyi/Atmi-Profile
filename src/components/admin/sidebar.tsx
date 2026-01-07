@@ -47,6 +47,13 @@ export default function Sidebar() {
       icon: Users,
       roles: ["admin"]
     },
+    //informasi
+    {
+      name: "Informasi",
+      href: "/admin/informasi",
+      icon: User,
+      roles: ["admin"]
+    },
   ];
 
   const userRole = session?.user?.role || "user";

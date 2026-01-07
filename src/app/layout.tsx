@@ -1,11 +1,18 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/providers";
+import { Toaster } from "react-hot-toast";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "PT ATMI SOLO",
-  description: "...",
+  title: "PT ATMI SOLO - Precision Manufacturing & Engineering",
+  description: "Mitra terpercaya dalam solusi manufaktur presisi dan rekayasa mesin.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -14,10 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id">
-      <body>
+    <html lang="id" className="scroll-smooth">
+      <body className={inter.className}>
         <Providers>
-            {children}
+          <Toaster position="top-center" />
+          {children}
         </Providers>
       </body>
     </html>

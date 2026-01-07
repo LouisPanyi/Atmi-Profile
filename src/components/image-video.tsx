@@ -6,7 +6,7 @@ import Image from 'next/image';
 
 interface ImageSliderWithVideoProps {
   images: string[];
-  video: string;
+  video?: string; // Ubah jadi optional
   channelName?: string;
 }
 
@@ -26,23 +26,28 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
   // Pastikan video selalu string
   const safeVideo = typeof video === 'string' ? video : '';
 
+  // LOGIC BARU: Cek apakah video valid (punya ID youtube)
+  const videoIdMatch = safeVideo.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+  const videoId = videoIdMatch ? videoIdMatch[1] : '';
+  const hasVideo = Boolean(videoId); // Boolean flag untuk mengecek ketersediaan video
+
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Tambahkan efek untuk mendeteksi ukuran layar
+  // Reset slide ke 0 jika images berubah (penting saat ganti tab)
+  useEffect(() => {
+    setCurrentSlide(0);
+    setIsVideoPlaying(false);
+    setVideoState('idle');
+  }, [images, video]);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobileView(window.innerWidth < 768);
     };
-
-    // Set ukuran awal
     handleResize();
-    
-    // Tambahkan event listener
     window.addEventListener('resize', handleResize);
-    
-    // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
     };
@@ -50,10 +55,6 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
 
   const getYouTubeEmbedUrl = (originalUrl: string) => {
     if (!originalUrl) return '';
-    
-    const videoIdMatch = originalUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
-    const videoId = videoIdMatch ? videoIdMatch[1] : '';
-
     if (!videoId) return originalUrl;
 
     const params = new URLSearchParams({
@@ -77,12 +78,25 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
     if (autoAdvanceIntervalRef.current) {
       clearInterval(autoAdvanceIntervalRef.current);
     }
-    if (currentSlide < safeImages.length && !isVideoPlaying) {
-      autoAdvanceIntervalRef.current = window.setInterval(() => {
-        setCurrentSlide((prev) => (prev === safeImages.length ? 0 : prev + 1));
-      }, 5000);
-    }
-  }, [currentSlide, safeImages.length, isVideoPlaying]);
+    
+    // Jika video sedang main, jangan auto advance
+    if (isVideoPlaying) return;
+
+    // Tentukan batas slide terakhir
+    const lastSlideIndex = hasVideo ? safeImages.length : safeImages.length - 1;
+
+    // Jika belum sampai slide terakhir (atau slide video), jalankan timer
+    // Note: Kita membiarkan auto advance berjalan terus (looping) jika hanya gambar
+    autoAdvanceIntervalRef.current = window.setInterval(() => {
+      setCurrentSlide((prev) => {
+        // Logic Looping:
+        // Jika ada video: index terakhir adalah length (video). Setelah video, balik ke 0.
+        // Jika TIDAK ada video: index terakhir adalah length-1 (gambar terakhir). Setelah itu balik ke 0.
+        const maxIndex = hasVideo ? safeImages.length : safeImages.length - 1;
+        return prev >= maxIndex ? 0 : prev + 1;
+      });
+    }, 5000);
+  }, [hasVideo, safeImages.length, isVideoPlaying]);
 
   useEffect(() => {
     resetAutoAdvance();
@@ -94,6 +108,7 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
   }, [currentSlide, safeImages.length, isVideoPlaying, resetAutoAdvance]);
 
   const goToSlide = (index: number) => {
+    // Stop video jika pindah dari slide video
     if (currentSlide === safeImages.length && videoRef.current) {
       videoRef.current.contentWindow?.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
       setIsVideoPlaying(false);
@@ -104,12 +119,14 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
   };
 
   const goToNextSlide = () => {
-    const nextSlideIndex = currentSlide === safeImages.length ? 0 : currentSlide + 1;
+    const maxIndex = hasVideo ? safeImages.length : safeImages.length - 1;
+    const nextSlideIndex = currentSlide >= maxIndex ? 0 : currentSlide + 1;
     goToSlide(nextSlideIndex);
   };
 
   const goToPrevSlide = () => {
-    const prevSlideIndex = currentSlide === 0 ? safeImages.length : currentSlide - 1;
+    const maxIndex = hasVideo ? safeImages.length : safeImages.length - 1;
+    const prevSlideIndex = currentSlide <= 0 ? maxIndex : currentSlide - 1;
     goToSlide(prevSlideIndex);
   };
 
@@ -124,27 +141,21 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
     setVideoState('ended');
   };
 
-  // Gunakan safeVideo untuk mencegah error
-  const videoIdMatch = safeVideo.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
-  const videoId = videoIdMatch ? videoIdMatch[1] : '';
   const videoThumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : '';
-
   const modifiedVideoUrl = getYouTubeEmbedUrl(safeVideo);
 
-  // Buat array thumbnail tanpa duplikasi
+  // Buat array thumbnail
   const imageThumbnails = safeImages.map((img, index) => ({
     id: index,
-    src: img || '', // Pastikan src adalah string
+    src: img || '',
     isVideo: false
   }));
 
-  // Tambahkan thumbnail video di akhir (tanpa duplikasi)
-  const allThumbnails = [
-    ...imageThumbnails,
-    { id: safeImages.length, src: videoThumbnailUrl, isVideo: true }
-  ];
+  // Logic: Hanya tambahkan thumbnail video jika hasVideo === true
+  const allThumbnails = hasVideo 
+    ? [...imageThumbnails, { id: safeImages.length, src: videoThumbnailUrl, isVideo: true }]
+    : [...imageThumbnails];
 
-  // FIX: Menggunakan 'fill' agar Image mengisi parent elementnya (yang sudah relative)
   const renderImage = (src: string, alt: string, sizes: string = "100vw") => {
     if (!src) {
       return (
@@ -158,22 +169,22 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
 
   return (
     <div className="relative w-full h-full">
-      {/* Main Display with Fixed Aspect Ratio - Reduced Size */}
-      <div className="relative w-full h-full">
+      {/* Main Display */}
+      <div className="relative w-full h-full bg-gray-100">
         <AnimatePresence mode="wait">
           {currentSlide < safeImages.length ? (
             <motion.div
-              key={currentSlide}
+              key={currentSlide} // Key based on index for transition
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="absolute inset-0"
             >
-              {/* Main Image */}
               {renderImage(safeImages[currentSlide], `Slide ${currentSlide + 1}`, "(max-width: 768px) 100vw, 75vw")}
             </motion.div>
-          ) : (
+          ) : hasVideo ? (
+            // Hanya render blok video ini jika hasVideo true
             <motion.div
               key="video"
               initial={{ opacity: 0 }}
@@ -204,17 +215,14 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
                         <p className="text-white">Video tidak tersedia</p>
                       </div>
                     )}
-                    {/* Close button when video is playing */}
                     <button
                       onClick={() => {
                         videoRef.current?.contentWindow?.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
                         setIsVideoPlaying(false);
                         setVideoState('ended');
-                        // Kembali ke slide pertama foto
                         setCurrentSlide(0);
                       }}
                       className="absolute top-4 right-4 z-20 bg-black/50 hover:bg-black/70 text-white p-2.5 rounded-full transition-all"
-                      aria-label="Close video"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -241,11 +249,11 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
                 )}
               </div>
             </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
 
-        {/* Navigation Buttons - Enhanced for Mobile */}
-        {currentSlide < safeImages.length && (
+        {/* Navigation Buttons */}
+        {safeImages.length > 0 && (
           <>
             <button
               onClick={goToPrevSlide}
@@ -266,9 +274,9 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
         )}
       </div>
 
-      {/* Enhanced Thumbnails Footer - Hidden when video is playing */}
-      {!isVideoPlaying && (
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+      {/* Thumbnails Footer */}
+      {!isVideoPlaying && safeImages.length > 0 && (
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center z-10">
           <div 
             ref={thumbnailContainerRef}
             className={`flex px-4 py-2 backdrop-blur-sm rounded-lg max-w-full overflow-x-auto scrollbar-custom ${
@@ -281,42 +289,23 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
               msOverflowStyle: 'none'
             }}
           >
-            {/* Custom scrollbar styling */}
             <style jsx>{`
-              .scrollbar-custom::-webkit-scrollbar {
-                height: 8px;
-              }
-              .scrollbar-custom::-webkit-scrollbar-track {
-                background: rgba(255,255,255,0.1);
-                border-radius: 4px;
-                margin: 0 8px;
-              }
-              .scrollbar-custom::-webkit-scrollbar-thumb {
-                background: rgba(255,255,255,0.3);
-                border-radius: 4px;
-              }
-              .scrollbar-custom::-webkit-scrollbar-thumb:hover {
-                background: rgba(255,255,255,0.5);
-              }
-              .scrollbar-custom::-webkit-scrollbar-button {
-                display: none;
-              }
+              .scrollbar-custom::-webkit-scrollbar { height: 8px; }
+              .scrollbar-custom::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 4px; margin: 0 8px; }
+              .scrollbar-custom::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+              .scrollbar-custom::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+              .scrollbar-custom::-webkit-scrollbar-button { display: none; }
             `}</style>
             
             {allThumbnails.map((thumbnail, index) => {
-              // Cek apakah ini thumbnail video
-              const isVideoThumbnail = thumbnail.id === safeImages.length;
-              
-              // Untuk thumbnail video, langsung gunakan id
-              // Untuk thumbnail gambar, gunakan index asli
+              const isVideoThumbnail = thumbnail.isVideo;
               const slideIndex = isVideoThumbnail ? safeImages.length : thumbnail.id;
               const isCurrentSlide = currentSlide === slideIndex;
               
-              // Untuk mobile, tampilkan dots yang sangat kecil
               if (isMobileView) {
                 return (
                   <button
-                    key={thumbnail.id}
+                    key={index} // gunakan index map karena ID bisa duplikat kalau logika salah, meski di sini aman
                     onClick={() => goToSlide(slideIndex)}
                     className={`flex-shrink-0 rounded-full transition-all ${
                       isCurrentSlide
@@ -329,12 +318,10 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
                 );
               }
               
-              // Untuk desktop, tampilkan thumbnail
               return (
                 <button
-                  key={thumbnail.id}
+                  key={index}
                   onClick={() => goToSlide(slideIndex)}
-                  // Class 'relative' penting untuk Image fill
                   className={`relative flex-shrink-0 rounded-lg overflow-hidden transition-all transform ${
                     isCurrentSlide
                       ? 'ring-4 ring-blue-500 scale-110 shadow-lg'
@@ -343,7 +330,6 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
                   style={{ width: '80px', height: '60px' }}
                   aria-label={`Go to slide ${slideIndex + 1}`}
                 >
-                  {/* Thumbnail Image */}
                   {renderImage(thumbnail.src, `Thumbnail ${slideIndex + 1}`, "80px")}
                   {isVideoThumbnail && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">

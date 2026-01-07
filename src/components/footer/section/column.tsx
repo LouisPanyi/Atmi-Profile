@@ -1,17 +1,16 @@
-// src/components/footer/section/columns.tsx
 "use client";
 
-import { motion } from "framer-motion";
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface FooterLink {
-  name: string;
+  name: string;          
+  downloadName?: string;  
   href?: string;
   type?: "download";
-  fileName?: string;
-  fileType?: string;
-  icon?: LucideIcon;
+  url?: string;
+  icon?: React.ElementType;
+  disabled?: boolean;
 }
 
 interface FooterColumn {
@@ -22,90 +21,71 @@ interface FooterColumn {
 
 interface FooterColumnsProps {
   columns: FooterColumn[];
-  onDownload?: (fileName: string, fileType: string) => void;
-  isDownloading?: boolean;
+  onDownload: (url: string, fileName: string) => void;
+  isDownloading: boolean;
 }
 
 export default function FooterColumns({
   columns,
   onDownload,
-  isDownloading = false,
+  isDownloading,
 }: FooterColumnsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-      {columns.map((column, index) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+      {columns.map((col, index) => (
         <motion.div
-          key={column.title}
+          key={index}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: index * 0.1 }}
           viewport={{ once: true }}
         >
-          <h3 className="text-xl font-bold mb-4 flex items-center">
-            {column.title}
-            <div className="w-8 h-0.5 bg-blue-500 ml-3" />
+          <h3 className="text-xl font-bold mb-6 flex items-center">
+            {col.title}
+            <div className="w-8 h-1 bg-blue-600 ml-3 rounded-full"></div>
           </h3>
-
-          <p className="text-gray-400 mb-6">{column.description}</p>
-
+          <p className="text-gray-400 mb-6 leading-relaxed text-sm">{col.description}</p>
           <ul className="space-y-3">
-            {column.links.map((link, linkIndex) => {
-              const delay = index * 0.1 + linkIndex * 0.05;
-
-              if (link.type === "download" && onDownload) {
+            {col.links.map((link, idx) => {
+              if (link.type === "download") {
                 return (
-                  <motion.li
-                    key={`${column.title}-${link.name}`}
-                    initial={{ opacity: 0, x: -10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay }}
-                    viewport={{ once: true }}
-                  >
+                  <li key={idx}>
                     <button
-                      type="button"
-                      onClick={() =>
-                        onDownload(link.fileName ?? "", link.fileType ?? "pdf")
-                      }
-                      disabled={isDownloading}
-                      className="text-gray-400 hover:text-white transition-colors flex items-center group w-full text-left disabled:opacity-50"
+                      // LOGIC BARU: Gunakan downloadName jika ada, jika tidak pakai name biasa
+                      onClick={() => link.url && onDownload(link.url, link.downloadName || link.name)}
+                      disabled={isDownloading || link.disabled}
+                      className={`flex items-center text-left transition-colors group ${
+                        link.disabled
+                          ? "opacity-50 cursor-not-allowed text-gray-500"
+                          : "text-gray-300 hover:text-blue-400"
+                      }`}
                     >
-                      {link.icon && <link.icon className="w-4 h-4 mr-2" />}
-                      {link.name}
-                      <motion.div
-                        className="w-0 h-0.5 bg-white ml-2"
-                        initial={{ width: 0 }}
-                        whileHover={{ width: 20 }}
-                        transition={{ duration: 0.3 }}
-                      />
+                      {link.icon && (
+                        <link.icon
+                          className={`w-4 h-4 mr-2 transition-transform ${
+                            !link.disabled && "group-hover:scale-110"
+                          }`}
+                        />
+                      )}
+                      {/* TAMPILAN: Selalu gunakan link.name (yang sudah difixed) */}
+                      <span className="text-sm font-medium">{link.name}</span>
                     </button>
-                  </motion.li>
+                  </li>
                 );
               }
 
-              const href = link.href && link.href.trim().length > 0 ? link.href : "#";
-
               return (
-                <motion.li
-                  key={`${column.title}-${link.name}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay }}
-                  viewport={{ once: true }}
-                >
+                <li key={idx}>
                   <Link
-                    href={href}
-                    prefetch={false}
-                    className="text-gray-400 hover:text-white transition-colors flex items-center group w-full text-left"
+                    href={link.href || "#"}
+                    className="flex items-center text-gray-300 hover:text-blue-400 transition-colors group"
                   >
-                    {link.name}
-                    <motion.div
-                      className="w-0 h-0.5 bg-white ml-2"
-                      initial={{ width: 0 }}
-                      whileHover={{ width: 20 }}
-                      transition={{ duration: 0.3 }}
-                    />
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                    <span className="text-sm font-medium hover:translate-x-1 transition-transform">
+                      {link.name}
+                    </span>
                   </Link>
-                </motion.li>
+                </li>
               );
             })}
           </ul>

@@ -4,7 +4,7 @@ import { sql } from "@vercel/postgres";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { del } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 import bcrypt from "bcrypt";
 
 async function checkAdminOnly() {
@@ -467,3 +467,90 @@ export async function deleteProduct(formData: FormData) {
     return { success: false, message: "Gagal menghapus produk." };
   }
 }
+
+// =========================================
+// FOOTER FILES MANAGEMENT
+// =========================================
+
+export async function createFooterFile(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "admin") return { success: false, message: "Unauthorized" };
+
+    const file = formData.get("file") as File;
+    const title = formData.get("title") as string;
+    const category = formData.get("category") as string;
+
+    if (!file || !title || !category) {
+      return { success: false, message: "Data tidak lengkap." };
+    }
+
+    // 1. Upload ke Vercel Blob
+    const blob = await put(file.name, file, {
+      access: 'public',
+    });
+
+    // 2. Tentukan ekstensi
+    const fileType = file.name.split('.').pop() || 'unknown';
+
+    // 3. Simpan ke DB
+    await sql`
+      INSERT INTO footer_files (title, category, file_url, file_type, is_active, created_at)
+      VALUES (${title}, ${category}, ${blob.url}, ${fileType}, false, NOW())
+    `;
+
+    revalidatePath("/admin/informasi");
+    return { success: true, message: "File berhasil diunggah." };
+  } catch (error) {
+    console.error("Upload Footer File Error:", error);
+    return { success: false, message: "Gagal upload file." };
+  }
+}
+
+export async function deleteFooterFile(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "admin") return { success: false, message: "Unauthorized" };
+
+    const id = formData.get("id") as string;
+    const fileUrl = formData.get("fileUrl") as string;
+
+    // 1. Hapus dari Blob (Opsional, jika ingin hemat storage)
+    if (fileUrl) {
+        await del(fileUrl);
+    }
+
+    // 2. Hapus dari DB
+    await sql`DELETE FROM footer_files WHERE id=${id}`;
+
+    revalidatePath("/admin/informasi");
+    return { success: true, message: "File berhasil dihapus." };
+  } catch (error) {
+    console.error("Delete Footer File Error:", error);
+    return { success: false, message: "Gagal menghapus file." };
+  }
+}
+
+export async function activateFooterFile(formData: FormData) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "admin") return { success: false, message: "Unauthorized" };
+
+    const id = formData.get("id") as string;
+    const category = formData.get("category") as string;
+
+    // 1. Matikan semua di kategori ini
+    await sql`UPDATE footer_files SET is_active = false WHERE category = ${category}`;
+
+    // 2. Aktifkan yang dipilih
+    await sql`UPDATE footer_files SET is_active = true WHERE id = ${id}`;
+
+    revalidatePath("/admin/informasi");
+    revalidatePath("/"); // Update halaman depan agar footer berubah
+    return { success: true, message: "File berhasil diaktifkan." };
+  } catch (error) {
+    console.error("Activate File Error:", error);
+    return { success: false, message: "Gagal mengaktifkan file." };
+  }
+}
+

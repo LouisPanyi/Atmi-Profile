@@ -78,7 +78,6 @@ export const machineDevelopmentData: { [key: string]: MDCContent } = {
             '/images/machine-development/electronic/electro14.jpg',
             '/images/machine-development/electronic/electro15.jpg',
         ],
-        video: 'https://youtu.be/3cX-0pUoXhA'
     },
     'Manufacture': {
         title: 'Manufacture',

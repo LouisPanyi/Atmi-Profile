@@ -6,6 +6,7 @@ import { compare } from "bcrypt";
 
 export const authOptions: AuthOptions = {
   session: { strategy: "jwt" },
+
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -16,7 +17,8 @@ export const authOptions: AuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
 
-        const { rows } = await sql`SELECT * FROM users WHERE email=${credentials.email}`;
+        const { rows } =
+          await sql`SELECT * FROM users WHERE email=${credentials.email}`;
         const user = rows[0];
 
         if (!user || !(await compare(credentials.password, user.password))) {
@@ -25,17 +27,18 @@ export const authOptions: AuthOptions = {
 
         const allowedRoles = ["admin", "news_writer"];
         if (!allowedRoles.includes(user.role)) {
-          throw new Error("Akses ditolak. Role tidak dikenali.");
+          throw new Error("Akses ditolak.");
         }
-        
+
         return {
-          id: user.id.toString(), // Pastikan ID string
-          name: user.name,        // Bisa null, akan di-handle di callback jwt
+          id: user.id.toString(),
+          name: user.name,
           email: user.email,
-          role: user.role || 'user', // Default role jika kosong
+          role: user.role,
         };
       },
     }),
+
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -50,34 +53,27 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      // Callback ini dipanggil setiap kali session diakses (token)
-      // ATAU saat pertama kali login (user ada isinya)
 
+  callbacks: {
+    async signIn() {
+      return true; // ❌ TIDAK redirect di sini
+    },
+
+    async jwt({ token, user }) {
       if (user) {
-        // Logika Fallback Nama: Jika user.name null, pakai bagian depan email
-        const safeName =
+        token.id = user.id;
+        token.role = (user as any).role;
+        token.name =
           user.name ||
           user.email?.split("@")[0] ||
           "Pengguna";
-
-        token.id = user.id;
-        token.role = (user as any).role; // Casting aman karena sudah dicek di authorize
-        token.name = safeName;
         token.email = user.email;
       }
-
-      // Pastikan token.name selalu ada untuk session yang sudah ada
-      if (!token.name) {
-        token.name = token.email?.split("@")[0] || "Pengguna";
-      }
-
       return token;
     },
+
     async session({ session, token }) {
-      if (session?.user) {
-        // Sekarang TypeScript sudah mengenali properti ini berkat perbaikan di .d.ts
+      if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.name = token.name;
@@ -86,7 +82,11 @@ export const authOptions: AuthOptions = {
       return session;
     },
   },
-  pages: { signIn: "/login" },
+
+  pages: {
+    signIn: "/login",
+  },
+
   secret: process.env.NEXTAUTH_SECRET,
 };
 

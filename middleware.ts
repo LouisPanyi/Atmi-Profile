@@ -1,29 +1,36 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+import type { NextRequest } from 'next/server';
 
-export default withAuth(
-  function middleware(req) {
-    const role = req.nextauth.token?.role;
-    const path = req.nextUrl.pathname;
+export async function middleware(req: NextRequest) {
+  // Ambil token session user
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  
+  // Cek apakah user sedang mengakses halaman admin
+  const isAdminPage = req.nextUrl.pathname.startsWith('/admin');
 
-    // 1. Proteksi Halaman Manajemen User (Hanya Admin)
-    if (path.startsWith("/admin/users") && role !== "admin") {
-      // Jika news_writer coba akses user management, lempar ke dashboard
-      return NextResponse.redirect(new URL("/admin", req.url));
+  if (isAdminPage) {
+    // 1. Jika belum login sama sekali -> lempar ke login
+    if (!token) {
+      const url = new URL('/login', req.url);
+      url.searchParams.set('callbackUrl', req.nextUrl.pathname);
+      return NextResponse.redirect(url);
     }
-
-    // 2. Proteksi Umum (Admin & News Writer boleh masuk dashboard & berita)
-    if (!["admin", "news_writer"].includes(role as string)) {
-      return NextResponse.rewrite(new URL("/404", req.url));
+    
+    // 2. Jika sudah login tapi rolenya BUKAN admin/news_writer -> lempar ke kontak
+    const userRole = token.role as string;
+    const allowedRoles = ['admin', 'news_writer'];
+    
+    if (!allowedRoles.includes(userRole)) {
+       // Redirect user biasa ke halaman kontak
+       return NextResponse.redirect(new URL('/kontak', req.url));
     }
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
   }
-);
+  
+  return NextResponse.next();
+}
 
+// Tentukan path mana saja yang dicek oleh middleware
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ['/admin/:path*'],
 };

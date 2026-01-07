@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, Trash, Save, Loader2, UploadCloud, XCircle, X } from "lucide-react";
 import { createNews, updateNews } from "@/lib/actions";
-import ConfirmationModal from "@/components/admin/confirmation-modal"; 
+import ConfirmationModal from "@/components/admin/confirmation-modal";
 import Image from "next/image";
 
 interface Section {
@@ -27,7 +27,7 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState(initialData?.title || "");
-  
+
   // --- STATE UNTUK MODAL HAPUS SECTION ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [sectionToDeleteIndex, setSectionToDeleteIndex] = useState<number | null>(null);
@@ -95,14 +95,14 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
   const handleRemoveImage = (index: number) => {
     handleSectionChange(index, "image", "");
     if (fileInputRefs.current[index]) {
-        fileInputRefs.current[index]!.value = "";
+      fileInputRefs.current[index]!.value = "";
     }
   }
 
   const addSection = () => {
     setSections([...sections, { image: "", caption: "", description: "" }]);
   };
-  
+
   // 1. TAHAP PERTAMA: Buka Modal Konfirmasi
   const initiateRemoveSection = (index: number) => {
     setSectionToDeleteIndex(index);
@@ -114,11 +114,11 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
     if (sectionToDeleteIndex === null) return;
 
     const index = sectionToDeleteIndex;
-    
+
     // Logika hapus asli
     const newSections = sections.filter((_, i) => i !== index);
     setSections(newSections);
-    
+
     // Bersihkan state upload dan ref yang terkait
     const newUploadingStates = { ...uploadingStates };
     delete newUploadingStates[index];
@@ -132,10 +132,10 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if(!title.trim()) {
-        alert("Judul berita tidak boleh kosong.");
-        return;
+
+    if (!title.trim()) {
+      alert("Judul berita tidak boleh kosong.");
+      return;
     }
 
     setLoading(true);
@@ -172,18 +172,18 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
         {/* Header Form */}
         <div className="border-b border-gray-100 pb-6 flex justify-between items-start">
           <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                  {isEditMode ? "Edit Berita" : "Buat Berita Baru"}
-              </h2>
-              <p className="text-gray-500 text-sm mt-1">Isi formulir di bawah ini untuk mempublikasikan artikel.</p>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {isEditMode ? "Edit Berita" : "Buat Berita Baru"}
+            </h2>
+            <p className="text-gray-500 text-sm mt-1">Isi formulir di bawah ini untuk mempublikasikan artikel.</p>
           </div>
-          
-          <Link 
-              href="/admin/berita" 
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-              title="Tutup / Batal"
+
+          <Link
+            href="/admin/berita"
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            title="Tutup / Batal"
           >
-              <X size={24} />
+            <X size={24} />
           </Link>
         </div>
 
@@ -214,10 +214,10 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
           {sections.map((section, idx) => (
             <div key={idx} className="p-6 bg-gray-50 rounded-xl border border-gray-200 relative group transition-all hover:shadow-sm">
               <div className="absolute top-3 right-3">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   // UPDATE: Memanggil initiateRemoveSection (buka modal)
-                  onClick={() => initiateRemoveSection(idx)} 
+                  onClick={() => initiateRemoveSection(idx)}
                   className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors disabled:opacity-30"
                   disabled={sections.length === 1} // Mencegah hapus jika tinggal 1
                   title="Hapus bagian ini"
@@ -225,35 +225,41 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
                   <Trash size={18} />
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div className="md:col-span-5 space-y-3">
                   <label className={labelClassName}>Gambar / Ilustrasi</label>
-                  
+
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white text-center relative min-h-[200px] flex flex-col justify-center items-center transition-colors hover:border-blue-400 hover:bg-blue-50/30">
                     {loading || uploadingStates[idx] ? (
                       <div className="flex flex-col items-center text-blue-500">
-                          <Loader2 className="animate-spin mb-2" size={24} />
-                          <span className="text-xs font-medium">Mengupload...</span>
+                        <Loader2 className="animate-spin mb-2" size={24} />
+                        <span className="text-xs font-medium">Mengupload...</span>
                       </div>
                     ) : section.image ? (
                       <div className="relative w-full h-full flex flex-col items-center">
-                          <div className="relative w-full h-40 mb-3 rounded-lg overflow-hidden shadow-sm border border-gray-200">
-                               <Image src={section.image} alt="Preview" className="object-cover w-full h-full" />
-                          </div>
-                          <div className="flex gap-2">
-                             <label htmlFor={`file-upload-${idx}`} className="cursor-pointer text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md hover:bg-blue-200 font-medium flex items-center gap-1">
-                               Ganti
-                             </label>
-                             <button 
-                               type="button"
-                               onClick={() => handleRemoveImage(idx)}
-                               className="text-xs bg-red-100 text-red-700 px-2 py-1.5 rounded-md hover:bg-red-200 font-medium flex items-center"
-                               title="Hapus Gambar"
-                             >
-                               <XCircle size={16}/>
-                             </button>
-                          </div>
+                        <div className="relative w-full h-40 mb-3 rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                          <Image
+                            src={section.image}
+                            alt="Preview"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" 
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <label htmlFor={`file-upload-${idx}`} className="cursor-pointer text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md hover:bg-blue-200 font-medium flex items-center gap-1">
+                            Ganti
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="text-xs bg-red-100 text-red-700 px-2 py-1.5 rounded-md hover:bg-red-200 font-medium flex items-center"
+                            title="Hapus Gambar"
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <label htmlFor={`file-upload-${idx}`} className="cursor-pointer flex flex-col items-center w-full h-full justify-center py-6">
@@ -262,7 +268,7 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
                         <span className="text-xs text-gray-400 mt-1">PNG, JPG (Max 4MB)</span>
                       </label>
                     )}
-                    
+
                     <input
                       id={`file-upload-${idx}`}
                       type="file"
@@ -305,19 +311,19 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
         {/* Footer Actions */}
         <div className="pt-6 border-t border-gray-100 sticky bottom-0 bg-white p-4 -mx-8 -mb-8 rounded-b-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex gap-4">
           <Link
-              href="/admin/berita"
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold flex justify-center items-center gap-2 transition-all"
+            href="/admin/berita"
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold flex justify-center items-center gap-2 transition-all"
           >
-              Batal
+            Batal
           </Link>
 
           <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 transition-all disabled:bg-blue-400 text-lg shadow-lg shadow-blue-200"
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold flex justify-center items-center gap-2 transition-all disabled:bg-blue-400 text-lg shadow-lg shadow-blue-200"
           >
-              {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
-              {isEditMode ? "Simpan Perubahan" : "Terbitkan Berita"}
+            {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+            {isEditMode ? "Simpan Perubahan" : "Terbitkan Berita"}
           </button>
         </div>
       </form>

@@ -4,13 +4,13 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'lh3.googleusercontent.com', // Domain profil Google
+        hostname: 'lh3.googleusercontent.com', 
         port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'googleusercontent.com', // Cadangan jika domain google berubah
+        hostname: 'googleusercontent.com', 
         port: '',
         pathname: '/**',
       },
@@ -20,7 +20,14 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
+    qualities: [75, 85, 100],
   },
 };
 

@@ -45,15 +45,16 @@ function LoginForm() {
         router.refresh();
         router.push(callbackUrl);
       }
-    } catch { 
+    } catch {
       setError("Terjadi kesalahan jaringan.");
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
-    //SignIn dengan Google biasanya akan redirect otomatis
-    signIn('google', { callbackUrl });
+    signIn("google", {
+      callbackUrl: "/kontak?login_success=true",
+    });
   };
 
   return (
@@ -169,7 +170,6 @@ function LoginForm() {
                 onClick={handleGoogleLogin}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all"
               >
-                {/* PERBAIKAN: Menambahkan properti width dan height */}
                 <Image
                   src="https://authjs.dev/img/providers/google.svg"
                   alt="Google Logo"

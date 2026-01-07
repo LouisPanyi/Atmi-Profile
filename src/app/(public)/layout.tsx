@@ -1,6 +1,6 @@
 // src/app/(public)/layout.tsx
 import Navbar from "@/components/home/navbar";
-import Footer from "@/components/footer";
+import FooterWrapper from "@/components/footer-wrapper"; 
 import Chatbot from "@/components/chatbot";
 
 export default function PublicLayout({
@@ -11,10 +11,10 @@ export default function PublicLayout({
   return (
     <>
       <Navbar />
-      <main>
+      <main className="min-h-screen">
         {children}
       </main>
-      <Footer />
+      <FooterWrapper />
       <Chatbot />
     </>
   );

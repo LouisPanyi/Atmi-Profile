@@ -1,135 +1,211 @@
-"use server";
-
-import "server-only";
+// src/lib/data.ts
 import { sql } from "@vercel/postgres";
 import { unstable_noStore as noStore } from "next/cache";
-import type { Product } from "@/data/product/product-types"; 
-import type { ProductTableRow } from "@/lib/definitions"; 
+import type { 
+  News, 
+  NewsRaw, 
+  Product, 
+  ProductRaw, 
+  ProductTableRow, 
+  UserRow, 
+  Pagination 
+} from "@/lib/definitions";
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 6; // Sesuaikan jumlah item per halaman
 
-export async function fetchNewsBySlug(slug: string) {
-  noStore();
-  try {
-    const decoded = decodeURIComponent(slug);
-    const { rows } = await sql<{
-      id: string; title: string; slug: string; created_at: string; sections: string;
-    }>`SELECT id, title, slug, created_at, sections FROM news WHERE slug = ${decoded} LIMIT 1`;
-    return rows[0] ?? null;
-  } catch (e) {
-    console.error("fetchNewsBySlug error:", e);
-    return null;
-  }
-}
+// ============================================================================
+// 1. NEWS (BERITA)
+// ============================================================================
 
 export async function fetchFilteredNews(query: string, currentPage: number) {
   noStore();
-  const q = query?.trim() || "";
-  const page = Number.isFinite(currentPage) && currentPage > 0 ? currentPage : 1;
-  const offset = (page - 1) * ITEMS_PER_PAGE;
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
-    const { rows } = await sql<{
-      id: string; title: string; slug: string; created_at: string; sections: string;
-    }>`
+    // ILIKE digunakan untuk pencarian case-insensitive di Postgres
+    const { rows } = await sql<NewsRaw>`
       SELECT id, title, slug, created_at, sections
       FROM news
-      WHERE title ILIKE ${`%${q}%`}
+      WHERE title ILIKE ${`%${query}%`} OR sections ILIKE ${`%${query}%`}
       ORDER BY created_at DESC
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
-    return rows;
-  } catch (e) {
-    console.error("fetchFilteredNews error:", e);
-    return [];
+
+    // Mapping dari format database (Raw) ke format Aplikasi (Clean)
+    return rows.map((row) => ({
+      ...row,
+      created_at: new Date(row.created_at).toISOString(),
+      sections: typeof row.sections === 'string' ? JSON.parse(row.sections) : row.sections,
+    })) as News[];
+  } catch (error) {
+    console.error("Database Error (fetchFilteredNews):", error);
+    throw new Error("Gagal mengambil daftar berita.");
   }
 }
 
 export async function fetchNewsPages(query: string) {
   noStore();
-  const q = query?.trim() || "";
   try {
-    const count = await sql<{ count: string }>`
-      SELECT COUNT(*)::text AS count FROM news WHERE title ILIKE ${`%${q}%`}
+    const count = await sql`
+      SELECT COUNT(*)
+      FROM news
+      WHERE title ILIKE ${`%${query}%`} OR sections ILIKE ${`%${query}%`}
     `;
-    return Math.max(1, Math.ceil(Number(count.rows[0]?.count ?? 0) / ITEMS_PER_PAGE));
-  } catch (e) {
-    console.error("fetchNewsPages error:", e);
-    return 1;
+    const totalPages = Math.ceil(Number(count.rows[0].count) / ITEMS_PER_PAGE);
+    return totalPages;
+  } catch (error) {
+    console.error("Database Error (fetchNewsPages):", error);
+    throw new Error("Gagal menghitung total halaman berita.");
   }
 }
 
-export async function fetchRelatedNews(currentSlug: string) {
+export async function fetchNewsBySlug(slug: string) {
   noStore();
   try {
-    const decoded = decodeURIComponent(currentSlug);
-    const { rows } = await sql<{
-      id: string; title: string; slug: string; created_at: string; sections: string;
-    }>`
+    const { rows } = await sql<NewsRaw>`
       SELECT id, title, slug, created_at, sections
       FROM news
-      WHERE slug <> ${decoded}
-      ORDER BY created_at DESC
-      LIMIT 3
+      WHERE slug = ${slug}
+      LIMIT 1
     `;
-    return rows;
-  } catch {
-    return [];
-  }
-}
 
-// Produk
-// 1. FETCH SEMUA PRODUK (Untuk Tabel Admin)
-export async function fetchAdminProducts() {
-  try {
-    const { rows } = await sql`
-      SELECT id, name, category, images, created_at 
-      FROM products 
-      ORDER BY created_at DESC
-    `;
-    
-    // Casting ke tipe yang ada di definitions.ts
-    return rows as unknown as ProductTableRow[];
+    if (rows.length === 0) return null;
+
+    const row = rows[0];
+    return {
+      ...row,
+      created_at: new Date(row.created_at).toISOString(),
+      sections: typeof row.sections === 'string' ? JSON.parse(row.sections) : row.sections,
+    } as News;
   } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Gagal mengambil data produk.");
+    console.error("Database Error (fetchNewsBySlug):", error);
+    return null; // Return null agar halaman bisa handle 404
   }
 }
 
-// 2. FETCH PRODUK BY ID (Untuk Halaman Edit)
-export async function fetchProductById(id: string) {
+// Untuk Halaman Admin Edit (Fetch by ID)
+export async function fetchNewsById(id: string) {
+  noStore();
   try {
-    const { rows } = await sql`
-      SELECT id, name, description, category, images, features, specifications 
-      FROM products 
+    const { rows } = await sql<NewsRaw>`
+      SELECT id, title, slug, created_at, sections
+      FROM news
       WHERE id = ${id}
     `;
-    
-    return rows.length > 0 ? (rows[0] as unknown as Product) : null;
+
+    if (rows.length === 0) return null;
+
+    const row = rows[0];
+    return {
+      ...row,
+      created_at: new Date(row.created_at).toISOString(),
+      sections: typeof row.sections === 'string' ? JSON.parse(row.sections) : row.sections,
+    } as News;
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("Database Error (fetchNewsById):", error);
+    throw new Error("Gagal mengambil detail berita.");
+  }
+}
+
+// ============================================================================
+// 2. PRODUCTS (PRODUK)
+// ============================================================================
+
+export async function fetchAdminProducts() {
+  noStore();
+  try {
+    const { rows } = await sql<ProductTableRow>`
+      SELECT id, name, category, images, created_at
+      FROM products
+      ORDER BY created_at DESC
+    `;
+    
+    // Pastikan images di-parse jika string
+    return rows.map(row => ({
+      ...row,
+      images: typeof row.images === 'string' ? JSON.parse(row.images) : row.images
+    })) as ProductTableRow[];
+  } catch (error) {
+    console.error("Database Error (fetchAdminProducts):", error);
+    throw new Error("Gagal mengambil data produk admin.");
+  }
+}
+
+export async function fetchProductById(id: string) {
+  noStore();
+  try {
+    const { rows } = await sql<ProductRaw>`
+      SELECT id, name, description, category, images, features, specifications, created_at
+      FROM products
+      WHERE id = ${id}
+    `;
+
+    if (rows.length === 0) return null;
+    const row = rows[0];
+
+    // Parsing JSON string dari database
+    return {
+      ...row,
+      created_at: new Date(row.created_at),
+      images: typeof row.images === 'string' ? JSON.parse(row.images) : row.images,
+      features: typeof row.features === 'string' ? JSON.parse(row.features) : row.features,
+      specifications: typeof row.specifications === 'string' ? JSON.parse(row.specifications) : row.specifications,
+    } as Product;
+  } catch (error) {
+    console.error("Database Error (fetchProductById):", error);
     throw new Error("Gagal mengambil detail produk.");
   }
 }
 
-// 3. FETCH UNTUK HALAMAN PUBLIK (Contoh penggunaan)
-export async function fetchPublicProducts() {
-   try {
-    const { rows } = await sql`
-      SELECT id, name, description, category, images, features, specifications, created_at
-      FROM products 
+// ============================================================================
+// 3. USERS (PENGGUNA)
+// ============================================================================
+
+export async function fetchUsers() {
+  noStore();
+  try {
+    const { rows } = await sql<UserRow>`
+      SELECT id, name, email, role, created_at
+      FROM users
       ORDER BY created_at DESC
     `;
-    
-    // Helper untuk parse JSON jika driver pg mengembalikan string
-    return rows.map((row) => ({
-      ...row,
-      images: typeof row.images === 'string' ? JSON.parse(row.images) : row.images,
-      features: typeof row.features === 'string' ? JSON.parse(row.features) : row.features,
-      specifications: typeof row.specifications === 'string' ? JSON.parse(row.specifications) : row.specifications,
-    })) as unknown as Product[];
+    return rows;
   } catch (error) {
-    console.error("Database Error:", error);
-    return []; 
+    console.error("Database Error (fetchUsers):", error);
+    throw new Error("Gagal mengambil data pengguna.");
   }
 }
+
+// ============================================================================
+// 4. DASHBOARD (STATISTIK)
+// ============================================================================
+
+export async function fetchCardData() {
+  noStore();
+  try {
+    // Jalankan query secara paralel untuk performa lebih baik
+    const invoiceCountPromise = sql`SELECT COUNT(*) FROM products`;
+    const customerCountPromise = sql`SELECT COUNT(*) FROM users`;
+    const newsCountPromise = sql`SELECT COUNT(*) FROM news`;
+
+    const data = await Promise.all([
+      invoiceCountPromise,
+      customerCountPromise,
+      newsCountPromise,
+    ]);
+
+    const numberOfProducts = Number(data[0].rows[0].count ?? "0");
+    const numberOfUsers = Number(data[1].rows[0].count ?? "0");
+    const numberOfNews = Number(data[2].rows[0].count ?? "0");
+
+    return {
+      numberOfProducts,
+      numberOfUsers,
+      numberOfNews,
+    };
+  } catch (error) {
+    console.error("Database Error (fetchCardData):", error);
+    throw new Error("Gagal mengambil data dashboard.");
+  }
+}
+

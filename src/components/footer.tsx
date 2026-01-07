@@ -1,4 +1,3 @@
-// src/components/Footer.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -9,6 +8,7 @@ import ContactInfoSection from "./footer/section/contact";
 import SocialMediaSection from "./footer/section/sosmed";
 import BottomBar from "./footer/section/bottom";
 import FloatingActionButtons from "./floating-action-buttons";
+import { FooterFile } from "@/lib/definitions";
 
 import {
   Download,
@@ -25,28 +25,53 @@ import {
   Newspaper,
 } from "lucide-react";
 
-export default function Footer() {
+interface FooterProps {
+  activeFiles?: {
+    katalog?: FooterFile;
+    presentasi?: FooterFile;
+    profile?: FooterFile;
+  };
+}
+
+export default function Footer({ activeFiles = {} }: FooterProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleDownload = (fileName: string, fileType: string) => {
+  // 1. DATA FILE LAMA (DEFAULT)
+  // Digunakan jika admin belum mengupload/mengaktifkan file baru di database.
+  const DEFAULT_FILES = {
+    katalog: {
+      title: "Katalog",
+      url: "/downloads/katalog2024.pdf", // Path file lama Anda
+    },
+    presentasi: {
+      title: "Presentation Slide",
+      url: "/downloads/presentasi24.pptx", // Path file lama Anda
+    },
+    profile: {
+      title: "Company Profile",
+      url: "/downloads/profile24.pdf", // Path file lama Anda
+    },
+  };
+
+  const handleDownload = (url: string, fileName: string) => {
+    if (!url) {
+      toast.error("File tidak ditemukan.");
+      return;
+    }
+
     setIsDownloading(true);
     try {
-      const a = document.createElement("a");
-      a.href = `/downloads/${fileName}.${fileType}`;
-      a.download = `${fileName}.${fileType}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success(`File ${fileName} berhasil diunduh!`);
+      // Membuka file di tab baru (baik itu URL blob atau path lokal)
+      window.open(url, "_blank");
     } catch (err) {
       console.error("Download error:", err);
-      toast.error(`Gagal mengunduh file ${fileName}.`);
+      toast.error(`Gagal membuka file ${fileName}.`);
     } finally {
       setIsDownloading(false);
     }
   };
 
-  // Data statis & stabil (tidak berubah saat hydrate)
+  // Data statis
   const quickLinks = useMemo(
     () => [
       { name: "Beranda", href: "/", icon: Home },
@@ -61,15 +86,14 @@ export default function Footer() {
 
   const industryLogos = useMemo(
     () => [
-      // Gunakan nama file gambar yang sudah Anda siapkan di folder public
-      { name: "Yayasan Karya Bakti Surakarta", src: "/images/logo/ykbs.png"},
-      { name: "PT ATMI Solo", src: "/images/logo/atmi-solo.png"},
-      { name: "Atmi ADE", src: "/images/logo/ade.png"},
-      { name: "Atmi Bizdec", src: "/images/logo/bizdec.png"},
-      { name: "SMK PIKA", src: "/images/logo/smk-pika.png"},
-      { name: "SMK Mikael Surakarta", src: "/images/logo/smk.png"},
-      { name: "Politeknik ATMI", src: "/images/logo/poltek.png"},
-      { name: "Atmi IGI", src: "/images/logo/igi.png"}
+      { name: "Yayasan Karya Bakti Surakarta", src: "/images/logo/ykbs.png" },
+      { name: "PT ATMI Solo", src: "/images/logo/atmi-solo.png" },
+      { name: "Atmi ADE", src: "/images/logo/ade.png" },
+      { name: "Atmi Bizdec", src: "/images/logo/bizdec.png" },
+      { name: "SMK PIKA", src: "/images/logo/smk-pika.png" },
+      { name: "SMK Mikael Surakarta", src: "/images/logo/smk.png" },
+      { name: "Politeknik ATMI", src: "/images/logo/poltek.png" },
+      { name: "Atmi IGI", src: "/images/logo/igi.png" },
     ],
     []
   );
@@ -111,9 +135,30 @@ export default function Footer() {
         title: "Informasi",
         description: "Download informasi terkini dan berguna dari PT ATMI SOLO.",
         links: [
-          { name: "Katalog", type: "download" as const, fileName: "katalog2024", fileType: "pdf", icon: Download },
-          { name: "Presentation Slide", type: "download" as const, fileName: "presentasi24", fileType: "pptx", icon: Download },
-          { name: "Company Profile", type: "download" as const, fileName: "profile24", fileType: "pdf", icon: Download },
+          // LOGIKA FALLBACK:
+          // Gunakan data Database (activeFiles) JIKA ADA.
+          // Jika TIDAK ADA, gunakan data lama (DEFAULT_FILES).
+          {
+            name: activeFiles.katalog?.title || DEFAULT_FILES.katalog.title,
+            type: "download" as const,
+            url: activeFiles.katalog?.file_url || DEFAULT_FILES.katalog.url,
+            icon: Download,
+            disabled: false, // Selalu aktif karena minimal ada file lama
+          },
+          {
+            name: activeFiles.presentasi?.title || DEFAULT_FILES.presentasi.title,
+            type: "download" as const,
+            url: activeFiles.presentasi?.file_url || DEFAULT_FILES.presentasi.url,
+            icon: Download,
+            disabled: false,
+          },
+          {
+            name: activeFiles.profile?.title || DEFAULT_FILES.profile.title,
+            type: "download" as const,
+            url: activeFiles.profile?.file_url || DEFAULT_FILES.profile.url,
+            icon: Download,
+            disabled: false,
+          },
         ],
       },
       {
@@ -127,7 +172,7 @@ export default function Footer() {
         ],
       },
     ],
-    []
+    [activeFiles] 
   );
 
   const contacts = useMemo(

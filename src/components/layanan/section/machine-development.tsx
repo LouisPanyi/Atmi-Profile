@@ -1,5 +1,4 @@
-// File: src/components/layanan/section/machine-development.tsx
-// ============================================================================
+// src/components/layanan/section/machine-development.tsx
 "use client";
 
 import { useState } from "react";
@@ -94,8 +93,9 @@ export default function MachineDevelopment() {
                 </div>
               )}
 
-              {/* Media */}
-              {!!(currentData.images?.length) && currentData.video && (
+              {/* Media - PERBAIKAN DI SINI */}
+              {/* Logika diubah: Tampilkan jika ada gambar ATAU ada video */}
+              {(!!(currentData.images?.length) || !!currentData.video) && (
                 <div className="mb-6">
                   <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl ring-1 ring-slate-200 shadow">
                     <div className="absolute inset-0">
