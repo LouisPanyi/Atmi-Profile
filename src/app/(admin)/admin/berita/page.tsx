@@ -1,34 +1,58 @@
-import Link from "next/link";
-import { sql } from "@vercel/postgres";
-import NewsTable from "@/components/admin/news/table";
-import { Plus } from "lucide-react";
+import { Metadata } from "next";
+import { fetchFilteredNews, fetchNewsLogs } from "@/lib/data";
+import NewsClientPage from "@/components/admin/news/client-page";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NewsListItem, NewsLog } from "@/lib/definitions";
+
+export const metadata: Metadata = {
+  title: "Manajemen Berita | Admin Panel",
+};
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminNewsPage() {
-  // UPDATE: Tambahkan 'slug' di sini
-  const { rows: news } = await sql`
-    SELECT id, title, slug, created_at 
-    FROM news 
-    ORDER BY created_at DESC
-  `;
+// Perhatikan perubahan tipe Props di sini
+export default async function NewsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ query?: string; page?: string }>; // Ubah jadi Promise
+}) {
+  // 1. AWAIT searchParams TERLEBIH DAHULU
+  const params = await searchParams;
+  
+  const query = params?.query || "";
+  const currentPage = Number(params?.page) || 1;
+
+  // 2. Fetch Session User
+  const session = await getServerSession(authOptions);
+  const currentUser = session?.user;
+
+  // 3. Define Variables
+  let news: NewsListItem[] = [];
+  let logs: NewsLog[] = [];
+
+  // 4. Fetch Data Awal
+  const allNews = await fetchFilteredNews(query, currentPage);
+
+  // 5. Logika Filtering Data Berdasarkan Role
+  if (currentUser?.role === "admin") {
+    // Admin: Melihat semua berita & Log aktivitas
+    news = allNews;
+    logs = await fetchNewsLogs();
+  } else {
+    // Penulis/User: Hanya melihat berita miliknya sendiri & Log Kosong
+    const currentUserId = Number(currentUser?.id);
+    news = allNews.filter((item) => Number(item.author_id) === currentUserId);
+    logs = []; 
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Manajemen Berita</h1>
-        <Link
-          href="/admin/berita/create"
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          Buat Berita Baru
-        </Link>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <NewsTable news={news} />
-      </div>
+    <div className="p-8">
+      <NewsClientPage 
+        news={news} 
+        logs={logs} 
+        currentUser={currentUser} 
+      />
     </div>
   );
 }

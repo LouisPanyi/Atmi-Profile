@@ -123,12 +123,15 @@ export default function ImageSlider({ images }: ImageSliderProps) {
             className="relative"
             style={{ height: `${containerHeight}px` }}
           >
+            {/* PERBAIKAN 1: Tambahkan prop 'fill' dan 'sizes' */}
             <Image
               src={images[currentIndex].url}
               alt={images[currentIndex].alt || `Product image ${currentIndex + 1}`}
-              className="w-full h-full object-contain cursor-pointer"
+              fill 
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+              className="object-contain cursor-pointer"
               onLoad={handleImageLoad}
-              onClick={() => handleImageClick(images[currentIndex].url, currentIndex)} // Add onClick handler
+              onClick={() => handleImageClick(images[currentIndex].url, currentIndex)}
             />
           </motion.div>
         </AnimatePresence>
@@ -171,7 +174,7 @@ export default function ImageSlider({ images }: ImageSliderProps) {
               onClick={() => {
                 setCurrentIndex(index);
                 setImageLoaded(false);
-                resetAutoAdvance(); // Reset interval after manual interaction
+                resetAutoAdvance(); 
               }}
               className={`relative flex-shrink-0 w-20 h-16 rounded-lg overflow-hidden transition-all duration-300 focus:outline-none ${
                 currentIndex === index ? 'ring-4 ring-blue-500' : 'ring-2 ring-transparent hover:ring-gray-400'
@@ -181,42 +184,42 @@ export default function ImageSlider({ images }: ImageSliderProps) {
               <Image
                 src={image.url}
                 alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
+                fill
+                sizes="80px"
+                className="object-cover"
               />
             </button>
           ))}
         </div>
       </div>
 
-      {/* Image Modal (click to enlarge) */}
+      {/* Image Modal */}
       {isImageModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
           onClick={closeImageModal}
         >
           <motion.div
-            className="bg-white p-4 rounded-lg shadow-2xl max-w-4xl relative"
+            className="bg-white p-4 rounded-lg shadow-2xl relative w-full max-w-5xl h-[80vh] flex items-center justify-center"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
             onClick={(e) => e.stopPropagation()} 
           >
-            {/* Tombol Tutup */}
             <button
               onClick={closeImageModal}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 hover:bg-white shadow-md transition-all"
+              className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/80 hover:bg-white shadow-md transition-all"
               aria-label="Tutup gambar"
             >
               <X className="w-6 h-6 text-gray-800" />
             </button>
 
-            {/* Navigation Buttons for Modal */}
             {images.length > 1 && (
               <>
                 <button
                   onClick={goToPreviousInModal}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/60 hover:bg-white p-2 rounded-full shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/60 hover:bg-white p-2 rounded-full shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
                   aria-label="Previous image"
                 >
                   <ChevronLeft className="w-6 h-6 text-gray-800" />
@@ -224,7 +227,7 @@ export default function ImageSlider({ images }: ImageSliderProps) {
 
                 <button
                   onClick={goToNextInModal}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/60 hover:bg-white p-2 rounded-full shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-white/60 hover:bg-white p-2 rounded-full shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
                   aria-label="Next image"
                 >
                   <ChevronRight className="w-6 h-6 text-gray-800" />
@@ -232,16 +235,19 @@ export default function ImageSlider({ images }: ImageSliderProps) {
               </>
             )}
 
-            {/* Image Counter */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/60 text-white px-3 py-1 rounded-full text-sm z-20">
               {modalIndex + 1} / {images.length}
             </div>
 
-            <Image
-              src={modalImage}
-              alt={`Enlarged product ${modalIndex + 1}`}
-              className="max-w-full max-h-[90vh] object-contain"
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={modalImage}
+                alt={`Enlarged product ${modalIndex + 1}`}
+                fill
+                sizes="100vw"
+                className="object-contain"
+              />
+            </div>
           </motion.div>
         </div>
       )}

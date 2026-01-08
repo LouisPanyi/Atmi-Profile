@@ -73,7 +73,7 @@ export default function Chatbot() {
     if (!form) return;
 
     const summary = Object.entries(payload)
-      .filter(([_, v]) => String(v ?? '').trim() !== '')
+      .filter(([, v]) => String(v ?? '').trim() !== '')
       .map(([k, v]) => `• ${k}: ${v}`)
       .join('\n');
 

@@ -6,6 +6,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { del, put } from "@vercel/blob";
 import bcrypt from "bcrypt";
+import { redirect } from "next/navigation";
+
 
 async function checkAdminOnly() {
   const session = await getServerSession(authOptions);
@@ -14,109 +16,190 @@ async function checkAdminOnly() {
   }
 }
 
-function generateSlug(title: string) {
-  return title
+type ActionResult =
+  | { success: true; id?: string; slug?: string; message?: string }
+  | { success: false; message: string };
+
+function slugify(input: string): string {
+  return input
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // remove diacritics
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "") + "-" + Date.now().toString().slice(-4);
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
+    .slice(0, 120);
 }
 
-export async function createNews(formData: FormData) {
+async function slugExists(slug: string, excludeId?: string): Promise<boolean> {
+  if (!excludeId) {
+    const { rows } = await sql`SELECT 1 FROM news WHERE slug = ${slug} LIMIT 1`;
+    return rows.length > 0;
+  }
+  const { rows } = await sql`
+    SELECT 1 FROM news WHERE slug = ${slug} AND id <> ${excludeId} LIMIT 1
+  `;
+  return rows.length > 0;
+}
+
+async function ensureUniqueSlug(base: string, excludeId?: string): Promise<string> {
+  const cleanBase = slugify(base);
+  const fallbackBase = cleanBase || `news-${Date.now()}`;
+
+  let candidate = fallbackBase;
+  for (let i = 0; i < 20; i += 1) {
+    const exists = await slugExists(candidate, excludeId);
+    if (!exists) return candidate;
+    candidate = `${fallbackBase}-${i + 2}`;
+  }
+
+  return `${fallbackBase}-${Date.now()}`;
+}
+
+export async function createNews(formData: FormData): Promise<ActionResult> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, message: "Anda harus login." };
+
+  const userId = Number(session.user.id);
+  const title = String(formData.get("title") ?? "").trim();
+  const sections = String(formData.get("sections") ?? "").trim();
+  const slugInput = String(formData.get("slug") ?? "").trim();
+
+  if (!title) return { success: false, message: "Judul berita tidak boleh kosong." };
+  if (!sections) return { success: false, message: "Konten (sections) tidak boleh kosong." };
+
   try {
-    const session = await getServerSession(authOptions);
-    // Pastikan user login
-    if (!session || !session.user?.id) {
-      throw new Error("Unauthorized");
-    }
+    const slug = await ensureUniqueSlug(slugInput || title);
 
-    const title = formData.get("title") as string;
-    const sections = formData.get("sections") as string;
-
-    // Generate Slug
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "") + "-" + Math.floor(Math.random() * 10000);
-
-    // A. INSERT BERITA (dengan author_id)
-    // RETURNING id berguna untuk mendapatkan ID berita yang baru dibuat
-    const result = await sql`
+    const result = await sql<{ id: string }>`
       INSERT INTO news (title, slug, sections, author_id, created_at)
-      VALUES (${title}, ${slug}, ${sections}, ${session.user.id}, NOW())
+      VALUES (${title}, ${slug}, ${sections}, ${userId}, NOW())
       RETURNING id
     `;
 
-    const newNewsId = result.rows[0].id;
+    const newsId = result.rows[0]?.id;
 
-    // B. CATAT LOG (CREATE)
     await sql`
-        INSERT INTO news_logs (news_id, user_id, action, details)
-        VALUES (${newNewsId}, ${session.user.id}, 'CREATE', ${title})
+      INSERT INTO news_logs (user_id, action, details, news_id)
+      VALUES (${userId}, 'CREATE', 'Membuat berita baru', ${newsId})
     `;
 
+    revalidatePath("/berita");
     revalidatePath("/admin/berita");
-    return { success: true };
+
+    return { success: true, id: newsId, slug, message: "Berita berhasil dibuat." };
   } catch (error) {
-    console.error(error);
+    console.error("Create News Error:", error);
     return { success: false, message: "Gagal membuat berita." };
   }
 }
 
-// 2. UPDATE NEWS
-export async function updateNews(id: string, formData: FormData) {
+export async function updateNews(formData: FormData): Promise<ActionResult> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return { success: false, message: "Unauthorized" };
+
+  const id = String(formData.get("id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const sections = String(formData.get("sections") ?? "").trim();
+  const slugInput = String(formData.get("slug") ?? "").trim();
+
+  if (!id) return { success: false, message: "ID berita tidak ditemukan." };
+  if (!title) return { success: false, message: "Judul berita tidak boleh kosong." };
+  if (!sections) return { success: false, message: "Konten (sections) tidak boleh kosong." };
+
+  const currentUser = session.user;
+  const currentUserId = Number(currentUser.id);
+
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id) throw new Error("Unauthorized");
+    // Proteksi author/admin (sesuai dokumen Anda)
+    const existingNews = await sql<{ author_id: number | null }>`
+      SELECT author_id FROM news WHERE id = ${id}
+    `;
+    if (existingNews.rows.length === 0) {
+      return { success: false, message: "Berita tidak ditemukan." };
+    }
 
-    const title = formData.get("title") as string;
-    const sections = formData.get("sections") as string;
+    const newsAuthorId = Number(existingNews.rows[0]?.author_id);
+    const isAdmin = currentUser.role === "admin";
+    const isAuthor = newsAuthorId === currentUserId;
 
-    // A. UPDATE BERITA
+    if (!isAdmin && !isAuthor) {
+      return {
+        success: false,
+        message: "Akses Ditolak: Anda hanya boleh mengedit berita buatan sendiri.",
+      };
+    }
+
+    const slug = await ensureUniqueSlug(slugInput || title, id);
+
     await sql`
-      UPDATE news 
-      SET title = ${title}, sections = ${sections}
+      UPDATE news
+      SET title = ${title}, slug = ${slug}, sections = ${sections}
       WHERE id = ${id}
     `;
 
-    // B. CATAT LOG (UPDATE)
     await sql`
-        INSERT INTO news_logs (news_id, user_id, action, details)
-        VALUES (${id}, ${session.user.id}, 'UPDATE', ${title})
+      INSERT INTO news_logs (user_id, action, details, news_id)
+      VALUES (${currentUserId}, 'UPDATE', 'Mengupdate berita', ${id})
     `;
 
+    revalidatePath("/berita");
     revalidatePath("/admin/berita");
-    return { success: true };
+
+    return { success: true, id, slug, message: "Berita berhasil diperbarui." };
   } catch (error) {
-    console.error(error);
-    return { success: false, message: "Gagal update berita." };
+    console.error("Update News Error:", error);
+    return { success: false, message: "Gagal mengupdate berita." };
   }
 }
 
-// 3. DELETE NEWS
+// 3. DELETE NEWS (SECURED)
 export async function deleteNews(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return { success: false, message: "Unauthorized" };
+
+  const id = formData.get("id") as string;
+  const currentUser = session.user;
+  const currentUserId = Number(currentUser.id);
+
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id) throw new Error("Unauthorized");
+    // A. Ambil author_id berita
+    const existingNews = await sql`SELECT author_id FROM news WHERE id = ${id}`;
+    
+    if (existingNews.rows.length === 0) {
+      return { success: false, message: "Berita tidak ditemukan." };
+    }
 
-    const id = formData.get("id") as string;
+    const newsItem = existingNews.rows[0];
+    const newsAuthorId = Number(newsItem.author_id);
 
-    // Ambil judul dulu sebelum dihapus untuk log
-    const { rows } = await sql`SELECT title FROM news WHERE id=${id}`;
-    const deletedTitle = rows[0]?.title || "Unknown Title";
+    // B. LOGIC PROTECTION
+    const isAdmin = currentUser.role === "admin";
+    const isAuthor = newsAuthorId === currentUserId;
 
-    await sql`DELETE FROM news WHERE id=${id}`;
+    if (!isAdmin && !isAuthor) {
+      return { 
+        success: false, 
+        message: "Akses Ditolak: Anda hanya boleh menghapus berita buatan sendiri." 
+      };
+    }
 
+    // C. Log Activity (Sebelum hapus data, agar ID masih valid jika foreign key strict, atau set null)
+    // Sebaiknya log ini fleksibel terhadap news_id yang mungkin null jika cascade delete
     await sql`
-        INSERT INTO news_logs (news_id, user_id, action, details)
-        VALUES (${id}, ${session.user.id}, 'DELETE', ${deletedTitle})
+      INSERT INTO news_logs (user_id, action, details, news_id)
+      VALUES (${currentUserId}, 'DELETE', 'Menghapus berita', ${id})
     `;
 
+    // D. Delete Data
+    await sql`DELETE FROM news WHERE id = ${id}`;
+
     revalidatePath("/admin/berita");
-    return { success: true };
+    revalidatePath("/berita");
+    return { success: true, message: "Berita berhasil dihapus." };
+
   } catch (error) {
-    console.error(error);
+    console.error("Database Error:", error);
     return { success: false, message: "Gagal menghapus berita." };
   }
 }
@@ -351,7 +434,7 @@ export async function createProduct(formData: FormData) {
       images = JSON.parse(imagesRaw);
       features = JSON.parse(featuresRaw);
       specifications = JSON.parse(specsRaw);
-    } catch (e) {
+    } catch {
       return { success: false, message: "Format data JSON tidak valid." };
     }
 
@@ -444,11 +527,11 @@ export async function deleteProduct(formData: FormData) {
         console.error("Error parsing images for deletion", e);
       }
 
-      // 2. Kumpulkan URL untuk dihapus dari Blob Storage
       if (Array.isArray(images) && images.length > 0) {
-        const urlsToDelete = images.map((img: any) => img.url).filter((url: string) => url);
+        const urlsToDelete = images
+          .map((img: { url: string }) => img.url)
+          .filter((url: string) => url);
 
-        // Hapus file dari Vercel Blob
         if (urlsToDelete.length > 0) {
           await del(urlsToDelete);
         }
@@ -517,7 +600,7 @@ export async function deleteFooterFile(formData: FormData) {
 
     // 1. Hapus dari Blob (Opsional, jika ingin hemat storage)
     if (fileUrl) {
-        await del(fileUrl);
+      await del(fileUrl);
     }
 
     // 2. Hapus dari DB

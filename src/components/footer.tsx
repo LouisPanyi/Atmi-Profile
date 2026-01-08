@@ -8,6 +8,7 @@ import ContactInfoSection from "./footer/section/contact";
 import SocialMediaSection from "./footer/section/sosmed";
 import BottomBar from "./footer/section/bottom";
 import FloatingActionButtons from "./floating-action-buttons";
+import DownloadModal from "./footer/download-modal";
 import { FooterFile } from "@/lib/definitions";
 
 import {
@@ -33,45 +34,108 @@ interface FooterProps {
   };
 }
 
+type DownloadSelection = {
+  url: string;
+  displayName: string;
+  downloadName: string;
+  category: "katalog" | "presentasi" | "profile" | "other";
+};
+
+// Konfigurasi Default File
+const DEFAULT_FILES = {
+  katalog: {
+    title: "Katalog",
+    url: "/downloads/katalog2024.pdf",
+    downloadName: "katalog2024.pdf",
+  },
+  presentasi: {
+    title: "Presentation Slide",
+    url: "/downloads/presentasi24.pptx",
+    downloadName: "presentasi24.pptx",
+  },
+  profile: {
+    title: "Company Profile",
+    url: "/downloads/profile24.pdf",
+    downloadName: "profile24.pdf",
+  },
+} as const;
+
+function detectCategory(displayName: string): DownloadSelection["category"] {
+  const lower = displayName.toLowerCase();
+  if (lower.includes("katalog")) return "katalog";
+  if (lower.includes("presentasi") || lower.includes("presentation")) return "presentasi";
+  if (lower.includes("profile")) return "profile";
+  return "other";
+}
+
 export default function Footer({ activeFiles = {} }: FooterProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<DownloadSelection | null>(null);
 
-  // 1. DATA FILE LAMA (DEFAULT)
-  // Digunakan jika admin belum mengupload/mengaktifkan file baru di database.
-  const DEFAULT_FILES = {
-    katalog: {
-      title: "Katalog",
-      url: "/downloads/katalog2024.pdf", // Path file lama Anda
-    },
-    presentasi: {
-      title: "Presentation Slide",
-      url: "/downloads/presentasi24.pptx", // Path file lama Anda
-    },
-    profile: {
-      title: "Company Profile",
-      url: "/downloads/profile24.pdf", // Path file lama Anda
-    },
-  };
+  const resolvedFiles = useMemo(() => {
+    return {
+      katalogUrl: activeFiles.katalog?.file_url || DEFAULT_FILES.katalog.url,
+      presentasiUrl: activeFiles.presentasi?.file_url || DEFAULT_FILES.presentasi.url,
+      profileUrl: activeFiles.profile?.file_url || DEFAULT_FILES.profile.url,
+    };
+  }, [activeFiles]);
 
-  const handleDownload = (url: string, fileName: string) => {
+  const handleDownloadClick = (url: string, displayName: string, downloadName?: string) => {
     if (!url) {
       toast.error("File tidak ditemukan.");
       return;
     }
 
+    const category = detectCategory(displayName);
+
+    setSelectedFile({
+      url,
+      displayName,
+      downloadName: downloadName || displayName,
+      category,
+    });
+    setModalOpen(true);
+  };
+
+  const handleConfirmDownload = async (email: string) => {
+    if (!selectedFile) return;
+
     setIsDownloading(true);
+
     try {
-      // Membuka file di tab baru (baik itu URL blob atau path lokal)
-      window.open(url, "_blank");
+      const response = await fetch("/api/downloads/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          fileName: selectedFile.displayName,
+          category: selectedFile.category,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Gagal menyimpan log");
+
+      const link = document.createElement("a");
+      link.href = selectedFile.url;
+      link.download = selectedFile.downloadName;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Download dimulai!");
+
+      setModalOpen(false);
+      setSelectedFile(null);
     } catch (err) {
       console.error("Download error:", err);
-      toast.error(`Gagal membuka file ${fileName}.`);
+      toast.error("Terjadi kesalahan saat memproses permintaan.");
     } finally {
       setIsDownloading(false);
     }
   };
 
-  // Data statis
   const quickLinks = useMemo(
     () => [
       { name: "Beranda", href: "/", icon: Home },
@@ -122,12 +186,11 @@ export default function Footer({ activeFiles = {} }: FooterProps) {
       },
       {
         title: "Layanan Kami",
-        description:
-          "Solusi terintegrasi untuk kebutuhan manufaktur dan pengembangan mesin industri.",
+        description: "Solusi terintegrasi untuk kebutuhan manufaktur dan pengembangan mesin industri.",
         links: [
           { name: "Work Fabrication", href: "/layanan#work-fabrication" },
           { name: "Machine Development", href: "/layanan#machine-development" },
-          { name: "Industri yang Dilayani", href: "/layanan#industri" },
+          { name: "Produk Kami", href: "/produk" },
           { name: "Keunggulan Kami", href: "/layanan#keunggulan" },
         ],
       },
@@ -135,27 +198,27 @@ export default function Footer({ activeFiles = {} }: FooterProps) {
         title: "Informasi",
         description: "Download informasi terkini dan berguna dari PT ATMI SOLO.",
         links: [
-          // LOGIKA FALLBACK:
-          // Gunakan data Database (activeFiles) JIKA ADA.
-          // Jika TIDAK ADA, gunakan data lama (DEFAULT_FILES).
           {
-            name: activeFiles.katalog?.title || DEFAULT_FILES.katalog.title,
+            name: DEFAULT_FILES.katalog.title,
+            downloadName: DEFAULT_FILES.katalog.downloadName,
             type: "download" as const,
-            url: activeFiles.katalog?.file_url || DEFAULT_FILES.katalog.url,
-            icon: Download,
-            disabled: false, // Selalu aktif karena minimal ada file lama
-          },
-          {
-            name: activeFiles.presentasi?.title || DEFAULT_FILES.presentasi.title,
-            type: "download" as const,
-            url: activeFiles.presentasi?.file_url || DEFAULT_FILES.presentasi.url,
+            url: resolvedFiles.katalogUrl,
             icon: Download,
             disabled: false,
           },
           {
-            name: activeFiles.profile?.title || DEFAULT_FILES.profile.title,
+            name: DEFAULT_FILES.presentasi.title,
+            downloadName: DEFAULT_FILES.presentasi.downloadName,
             type: "download" as const,
-            url: activeFiles.profile?.file_url || DEFAULT_FILES.profile.url,
+            url: resolvedFiles.presentasiUrl,
+            icon: Download,
+            disabled: false,
+          },
+          {
+            name: DEFAULT_FILES.profile.title,
+            downloadName: DEFAULT_FILES.profile.downloadName,
+            type: "download" as const,
+            url: resolvedFiles.profileUrl,
             icon: Download,
             disabled: false,
           },
@@ -165,14 +228,16 @@ export default function Footer({ activeFiles = {} }: FooterProps) {
         title: "Kontak & Lokasi",
         description: "Hubungi kami untuk informasi lebih lanjut atau kunjungi lokasi kami.",
         links: [
-          { name: "Kantor Pusat", href: "/kontak" },
-          { name: "Workshop", href: "/kontak" },
+          { 
+            name: "Kantor Pusat", 
+            href: "/kontak#maps" 
+          },
           { name: "Tim Sales & Marketing", href: "/kontak#tim-sales" },
           { name: "News", href: "/berita" },
         ],
       },
     ],
-    [activeFiles] 
+    [resolvedFiles]
   );
 
   const contacts = useMemo(
@@ -187,16 +252,13 @@ export default function Footer({ activeFiles = {} }: FooterProps) {
     ],
     []
   );
+
   const year = useMemo(() => new Date().getFullYear(), []);
 
   return (
-    <footer className="bg-gradient-to-b from-gray-900 to-black text-white">
+    <footer className="bg-gradient-to-b from-gray-900 to-black text-white relative">
       <div className="container mx-auto px-6 py-12">
-        <FooterColumns
-          columns={footerColumns}
-          onDownload={handleDownload}
-          isDownloading={isDownloading}
-        />
+        <FooterColumns columns={footerColumns} onDownload={handleDownloadClick} isDownloading={isDownloading} />
         <QuickLinksAndIndustries quickLinks={quickLinks} industryLogos={industryLogos} />
         <ContactInfoSection contacts={contacts} />
         <SocialMediaSection socialLinks={socialLinks} />
@@ -204,6 +266,17 @@ export default function Footer({ activeFiles = {} }: FooterProps) {
 
       <BottomBar year={year} />
       <FloatingActionButtons />
+
+      <DownloadModal
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedFile(null);
+        }}
+        onConfirm={handleConfirmDownload}
+        fileName={selectedFile?.displayName || "Dokumen"}
+        isLoading={isDownloading}
+      />
     </footer>
   );
 }

@@ -5,7 +5,13 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { X } from "lucide-react";
 
-export default function UploadFormModal({ isOpen, onClose, defaultCategory }: any) {
+interface UploadFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  defaultCategory: string;
+}
+
+export default function UploadFormModal({ isOpen, onClose, defaultCategory }: UploadFormModalProps) {
   const [isUploading, setIsUploading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -27,14 +33,11 @@ export default function UploadFormModal({ isOpen, onClose, defaultCategory }: an
 
   if (!isOpen) return null;
 
-  // Format kategori agar lebih cantik di judul (kapital)
   const categoryTitle = defaultCategory.charAt(0).toUpperCase() + defaultCategory.slice(1);
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-        
-        {/* Header Modal */}
         <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-900">Upload {categoryTitle}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">

@@ -1,9 +1,8 @@
-// src/components/layanan/section/StrengthsSection.tsx
 import { motion } from 'framer-motion';
 import { CheckCircle, Award, Users } from 'lucide-react';
 
 interface Strength {
-  icon: React.ComponentType<any>;
+  icon: React.ElementType; 
   title: string;
   description: string;
 }
@@ -17,7 +16,9 @@ export default function StrengthsSection() {
 
   return (
     <motion.section 
-      className="py-20"
+      // PERBAIKAN: Tambahkan ID untuk target scroll
+      id="keunggulan"
+      className="py-20 scroll-mt-24"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}

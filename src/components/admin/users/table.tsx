@@ -6,11 +6,19 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ConfirmationModal from "@/components/admin/confirmation-modal";
 
+// 1. Definisikan Interface untuk User di Tabel
+export interface TableUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export default function UsersTable({ 
   users, 
   currentUserId 
 }: { 
-  users: any[], 
+  users: TableUser[], // Gunakan tipe TableUser, bukan any[]
   currentUserId: string 
 }) {
   const router = useRouter();
@@ -42,7 +50,7 @@ export default function UsersTable({
       } else {
         alert(result?.message || "Gagal menghapus user.");
       }
-    } catch (error) {
+    } catch {
       alert("Terjadi kesalahan sistem.");
     } finally {
       setIsDeleting(false);

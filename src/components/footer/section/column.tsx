@@ -1,15 +1,17 @@
+// src/components/footer/section/column.tsx
 "use client";
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import type { ElementType } from "react";
 
 interface FooterLink {
-  name: string;          
-  downloadName?: string;  
+  name: string; // label UI (harus stabil)
+  downloadName?: string; // filename untuk download attribute
   href?: string;
   type?: "download";
   url?: string;
-  icon?: React.ElementType;
+  icon?: ElementType;
   disabled?: boolean;
 }
 
@@ -21,38 +23,37 @@ interface FooterColumn {
 
 interface FooterColumnsProps {
   columns: FooterColumn[];
-  onDownload: (url: string, fileName: string) => void;
+  onDownload: (url: string, displayName: string, downloadName?: string) => void;
   isDownloading: boolean;
 }
 
-export default function FooterColumns({
-  columns,
-  onDownload,
-  isDownloading,
-}: FooterColumnsProps) {
+export default function FooterColumns({ columns, onDownload, isDownloading }: FooterColumnsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-      {columns.map((col, index) => (
+      {columns.map((col) => (
         <motion.div
-          key={index}
+          key={col.title}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
+          transition={{ duration: 0.5 }}
           viewport={{ once: true }}
         >
           <h3 className="text-xl font-bold mb-6 flex items-center">
             {col.title}
             <div className="w-8 h-1 bg-blue-600 ml-3 rounded-full"></div>
           </h3>
+
           <p className="text-gray-400 mb-6 leading-relaxed text-sm">{col.description}</p>
+
           <ul className="space-y-3">
-            {col.links.map((link, idx) => {
+            {col.links.map((link) => {
+              const key = link.type === "download" ? `dl:${link.name}` : `ln:${link.href ?? link.name}`;
+
               if (link.type === "download") {
                 return (
-                  <li key={idx}>
+                  <li key={key}>
                     <button
-                      // LOGIC BARU: Gunakan downloadName jika ada, jika tidak pakai name biasa
-                      onClick={() => link.url && onDownload(link.url, link.downloadName || link.name)}
+                      onClick={() => link.url && onDownload(link.url, link.name, link.downloadName)}
                       disabled={isDownloading || link.disabled}
                       className={`flex items-center text-left transition-colors group ${
                         link.disabled
@@ -67,7 +68,6 @@ export default function FooterColumns({
                           }`}
                         />
                       )}
-                      {/* TAMPILAN: Selalu gunakan link.name (yang sudah difixed) */}
                       <span className="text-sm font-medium">{link.name}</span>
                     </button>
                   </li>
@@ -75,7 +75,7 @@ export default function FooterColumns({
               }
 
               return (
-                <li key={idx}>
+                <li key={key}>
                   <Link
                     href={link.href || "#"}
                     className="flex items-center text-gray-300 hover:text-blue-400 transition-colors group"

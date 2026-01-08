@@ -1,11 +1,6 @@
 // src/components/Footer/section/SocialMedia.tsx
 import { motion } from 'framer-motion';
-
-interface SocialLink {
-  name: string;
-  url: string;
-  icon: React.ComponentType<any>;
-}
+import { SocialLink } from '@/lib/definitions';
 
 interface SocialMediaSectionProps {
   socialLinks: SocialLink[];

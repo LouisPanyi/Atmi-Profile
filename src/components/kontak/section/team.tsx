@@ -1,4 +1,4 @@
-// src/components/kontak/sections/TeamSection.tsx
+// src/components/kontak/sections/Team.tsx
 import ContactPersonCard from '@/components/kontak/contact-person-card';
 
 const sheetMetalContacts = [
@@ -47,12 +47,30 @@ const machineMechanicalContacts = [
 
 export default function TeamSection() {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Tim Sales & Marketing</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ContactPersonCard title="Sheet Metal Products" contacts={sheetMetalContacts} />
-        <ContactPersonCard title="Machine Mechanical Products" contacts={machineMechanicalContacts} />
+   <section id="tim-sales" className="py-16 md:py-24 bg-gray-50 scroll-mt-24">
+      <div className="container mx-auto px-6">
+        
+        {/* Judul Section */}
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Tim Sales & Marketing</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Hubungi spesialis produk kami untuk konsultasi teknis, penawaran harga, dan solusi terbaik untuk kebutuhan industri Anda.
+          </p>
+        </div>
+
+        {/* Grid Card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto items-start">
+          <ContactPersonCard 
+            title="Sheet Metal Products" 
+            contacts={sheetMetalContacts} 
+          />
+          <ContactPersonCard 
+            title="Machine Mechanical Products" 
+            contacts={machineMechanicalContacts} 
+          />
+        </div>
+        
       </div>
-    </div>
+    </section>
   );
 }

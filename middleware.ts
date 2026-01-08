@@ -3,34 +3,44 @@ import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
-  // Ambil token session user
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  
-  // Cek apakah user sedang mengakses halaman admin
-  const isAdminPage = req.nextUrl.pathname.startsWith('/admin');
+  const { pathname } = req.nextUrl;
 
-  if (isAdminPage) {
-    // 1. Jika belum login sama sekali -> lempar ke login
+  // -----------------------------------------------------------
+  // LOGIKA 1: PROTEKSI ADMIN PANEL (Semua yang berawalan /admin)
+  // -----------------------------------------------------------
+  if (pathname.startsWith('/admin')) {
+    
+    // A. Jika belum login -> Lempar ke Login
     if (!token) {
       const url = new URL('/login', req.url);
-      url.searchParams.set('callbackUrl', req.nextUrl.pathname);
+      url.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(url);
     }
-    
-    // 2. Jika sudah login tapi rolenya BUKAN admin/news_writer -> lempar ke kontak
+
     const userRole = token.role as string;
-    const allowedRoles = ['admin', 'news_writer'];
-    
-    if (!allowedRoles.includes(userRole)) {
-       // Redirect user biasa ke halaman kontak
-       return NextResponse.redirect(new URL('/kontak', req.url));
+
+    // B. BLOCK TOTAL UNTUK USER BIASA
+    // Jika role adalah 'user', mereka DILARANG KERAS masuk area admin manapun.
+    if (userRole === 'user') {
+      // Kembalikan ke halaman utama website (Home)
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+
+    // C. Proteksi Spesifik (Admin vs News Writer)
+    // Area yang hanya boleh Admin (News Writer dilarang masuk sini)
+    const superAdminPaths = ['/admin/users', '/admin/products', '/admin/settings'];
+    const isSuperAdminPath = superAdminPaths.some(path => pathname.startsWith(path));
+
+    if (isSuperAdminPath && userRole !== 'admin') {
+      // Jika News Writer coba masuk dapur Admin -> Lempar ke Dashboard Berita
+      return NextResponse.redirect(new URL('/admin/berita', req.url));
     }
   }
-  
+
   return NextResponse.next();
 }
 
-// Tentukan path mana saja yang dicek oleh middleware
 export const config = {
   matcher: ['/admin/:path*'],
 };

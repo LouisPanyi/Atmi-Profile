@@ -44,13 +44,17 @@ export default function IntroductionSection({
   const ref = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    const currentRef = ref.current;
+
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
       { threshold: 0.2, rootMargin: "0px 0px -100px 0px" }
     );
-    if (ref.current) observer.observe(ref.current);
+
+    if (currentRef) observer.observe(currentRef);
+
     return () => {
-      if (ref.current) observer.unobserve(ref.current);
+      if (currentRef) observer.unobserve(currentRef);
     };
   }, []);
 

@@ -2,9 +2,10 @@
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import ImageSlider from '@/components/image-slider';
+import { Product } from '@/data/product/product-types';
 
 interface ProductModalProps {
-  product: any;
+  product: Product | null;
   isOpen: boolean;
   onClose: () => void;
   onInquiry: () => void;

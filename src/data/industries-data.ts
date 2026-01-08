@@ -1,7 +1,7 @@
 import { Building, Factory, Cpu, Users } from 'lucide-react';
 
 export interface Industry {
-    icon: any;
+    icon: React.ElementType;
     name: string;
     description: string;
 }

@@ -1,4 +1,3 @@
-// src/components/layanan/section/machine-development.tsx
 "use client";
 
 import { useState } from "react";
@@ -6,13 +5,38 @@ import { motion, AnimatePresence } from "framer-motion";
 import { machineDevelopmentData } from "@/data/machine-development-data";
 import ImageSliderWithVideo from "@/components/image-video";
 
+// Definisi Interface Data
+interface DetailItem {
+  label: string;
+  items: string[];
+}
+
+interface MachineData {
+  title?: string;
+  description?: string;
+  capabilities?: string[];
+  images?: string[];
+  video?: string;
+  details?: DetailItem[];
+}
+
 export default function MachineDevelopment() {
   const serviceKeys = Object.keys(machineDevelopmentData || {});
   const [activeService, setActiveService] = useState(serviceKeys[0] || "");
-  const currentData = (machineDevelopmentData as any)?.[activeService] || {};
+  
+  // Casting data ke tipe Record agar aman diakses
+  const dataMap = machineDevelopmentData as Record<string, MachineData>;
+  const currentData = dataMap[activeService] || {};
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+    <motion.div 
+      // PERBAIKAN: Tambahkan ID untuk target scroll
+      id="machine-development"
+      className="scroll-mt-24"
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      transition={{ duration: 0.3 }}
+    >
       {/* Lead */}
       <div className="mb-8">
         <h3 className="text-2xl font-bold text-slate-900">Machine Development Center</h3>
@@ -81,7 +105,7 @@ export default function MachineDevelopment() {
                 <div className="mb-6">
                   <h5 className="text-base font-semibold text-slate-900 mb-2">Kemampuan Layanan</h5>
                   <div className="flex flex-wrap gap-2">
-                    {currentData.capabilities.map((cap: string, i: number) => (
+                    {currentData.capabilities.map((cap, i) => (
                       <span
                         key={i}
                         className="rounded-full border border-blue-200 bg-blue-50 text-blue-800 px-3 py-1.5 text-sm"
@@ -93,14 +117,13 @@ export default function MachineDevelopment() {
                 </div>
               )}
 
-              {/* Media - PERBAIKAN DI SINI */}
-              {/* Logika diubah: Tampilkan jika ada gambar ATAU ada video */}
+              {/* Media */}
               {(!!(currentData.images?.length) || !!currentData.video) && (
                 <div className="mb-6">
                   <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl ring-1 ring-slate-200 shadow">
                     <div className="absolute inset-0">
                       <ImageSliderWithVideo
-                        images={currentData.images}
+                        images={currentData.images || []}
                         video={currentData.video}
                         channelName="PT ATMI SOLO"
                       />
@@ -114,11 +137,11 @@ export default function MachineDevelopment() {
                 <div className="mb-2">
                   <h5 className="text-base font-semibold text-slate-900 mb-3">Detail Layanan</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {currentData.details.map((detail: any, idx: number) => (
+                    {currentData.details.map((detail, idx) => (
                       <div key={idx} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
                         <p className="mb-2 font-medium text-slate-800">{detail.label}:</p>
                         <ul className="space-y-1">
-                          {(detail.items || []).map((item: string, itemIdx: number) => (
+                          {(detail.items || []).map((item, itemIdx) => (
                             <li key={itemIdx} className="flex items-start text-slate-700">
                               <span className="mr-2 text-blue-600">•</span>
                               {item}

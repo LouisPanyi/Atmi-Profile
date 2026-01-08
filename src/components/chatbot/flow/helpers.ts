@@ -1,6 +1,11 @@
 // src/components/chatbot/flow/helpers.ts
 import { CurrencyIDR, FormField } from './types';
 
+interface NumericFieldProps {
+  min?: number;
+  max?: number;
+}
+
 export const formatCurrencyID = (value: CurrencyIDR): string =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 
@@ -32,8 +37,15 @@ export const validateForm = (
     if (f.kind === "number" && v) {
       const num = Number(v);
       if (Number.isNaN(num)) errors[f.id] = "Harus angka";
-      if (typeof (f as any).min === "number" && num < (f as any).min) errors[f.id] = `Minimal ${(f as any).min}`;
-      if (typeof (f as any).max === "number" && num > (f as any).max) errors[f.id] = `Maksimal ${(f as any).max}`;
+      
+      // Casting aman menggunakan unknown lalu custom interface
+      const numericField = f as unknown as NumericFieldProps;
+      
+      if (typeof numericField.min === "number" && num < numericField.min) 
+        errors[f.id] = `Minimal ${numericField.min}`;
+      
+      if (typeof numericField.max === "number" && num > numericField.max) 
+        errors[f.id] = `Maksimal ${numericField.max}`;
     }
   }
   return { ok: Object.keys(errors).length === 0, errors };

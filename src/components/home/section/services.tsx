@@ -85,7 +85,7 @@ export default function ServicesSection() {
           viewport={{ once: true }}
         >
           {servicesData.map((service, index) => (
-            <motion.div
+           <motion.div
               key={service.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -95,6 +95,7 @@ export default function ServicesSection() {
                 [@supports(backdrop-filter:blur(0))]:backdrop-blur
                 bg-white/70 dark:bg-blue-900/30
                 ring-1 ring-blue-200/60 dark:ring-blue-800/60 rounded-2xl
+                relative hover:z-50 transition-all duration-200 
               "
             >
               <ServiceCard

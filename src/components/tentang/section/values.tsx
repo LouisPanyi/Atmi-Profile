@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Star} from 'lucide-react';
 
 interface Value {
-  icon: React.ComponentType<any>;
+  icon: React.ElementType;
   title: string;
   description: string;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react'; // Import useSession
 import Head from 'next/head';
 import Hero from '@/components/kontak/section/hero';
@@ -28,38 +28,27 @@ export default function ContactPage() {
 function ContactPageContent() {
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   // Ambil fungsi update dari useSession untuk memaksa refresh status login
-  const { update, status } = useSession();
+  const { update } = useSession();
 
   useEffect(() => {
-    // Override title & meta (Logika SEO Anda)
     document.title = "Kontak | PT ATMI SOLO - Precision Manufacturing & Engineering";
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) metaDescription.setAttribute('content', "Hubungi PT ATMI SOLO...");
     const metaKeywords = document.querySelector('meta[name="keywords"]');
     if (metaKeywords) metaKeywords.setAttribute('content', "kontak ATMI...");
 
-    // --- LOGIKA UTAMA PERBAIKAN ---
     const checkLoginSuccess = async () => {
-      // Jika URL mengandung ?login_success=true
       if (searchParams.get('login_success') === 'true') {
-
-        // 1. Tampilkan Modal
         setShowLoginSuccess(true);
-
-        // 2. Paksa refresh session agar Form mendeteksi user sudah login
         await update();
-
-        // 3. Bersihkan URL (hapus query param) agar rapi
         const newUrl = window.location.pathname;
         window.history.replaceState({}, '', newUrl);
       }
     };
 
     checkLoginSuccess();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, update]);
 
   return (
@@ -111,7 +100,7 @@ function ContactPageContent() {
         </div>
       )}
 
-      <div className="bg-gray-50 min-h-screen">
+   <div className="bg-gray-50 min-h-screen">
         <Hero />
         <section className="container mx-auto px-6 py-4">
           <Breadcrumb
@@ -136,7 +125,6 @@ function ContactPageContent() {
         <section className="pb-32">
           <div className="container mx-auto px-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Kolom Kiri */}
               <div className="lg:col-span-2 space-y-8">
                 <ContactInfo />
                 <TeamSection />
@@ -144,12 +132,9 @@ function ContactPageContent() {
                 <MapSection />
               </div>
 
-              {/* Kolom Kanan - Sticky Container */}
               <div className="lg:col-span-1">
                 <div className="sticky top-8 space-y-8">
-                  {/* FORMULIR KONTAK AKAN RELOAD STATUSNYA DI SINI */}
                   <ContactForm />
-
                   <div className="sticky top-40">
                     <SocialMedia />
                   </div>

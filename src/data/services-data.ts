@@ -1,7 +1,7 @@
 import { Wrench, Bot } from 'lucide-react';
 
 export interface Service {
-    icon: any;
+    icon: React.ElementType;
     title: string;
     description: string;
     href: string;

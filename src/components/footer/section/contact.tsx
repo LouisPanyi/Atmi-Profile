@@ -1,11 +1,7 @@
 // src/components/Footer/section/ContactInfo.tsx
+import { ContactInfo } from '@/lib/definitions';
 import { motion } from 'framer-motion';
 
-interface ContactInfo {
-  title: string;
-  icon: React.ComponentType<any>;
-  details: string[];
-}
 
 interface ContactInfoSectionProps {
   contacts: ContactInfo[];

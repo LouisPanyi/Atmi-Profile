@@ -1,12 +1,7 @@
 // src/components/layanan/section/IndustriesSection.tsx
+import { Industry } from '@/lib/definitions';
 import { motion } from 'framer-motion';
 import { Factory, Cpu } from 'lucide-react';
-
-interface Industry {
-  icon: React.ComponentType<any>;
-  name: string;
-  description: string;
-}
 
 export default function IndustriesSection() {
   const industriesData: Industry[] = [

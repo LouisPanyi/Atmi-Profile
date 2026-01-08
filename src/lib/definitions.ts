@@ -102,30 +102,30 @@ export interface NewsSection {
   description?: string; // HTML/Text content
 }
 
-// Tipe Berita Mentah dari Database
-export interface NewsRaw {
-  id: string;
-  title: string;
-  slug: string;
-  created_at: Date | string;
-  sections: string; // JSON string di database
-}
-
-// Tipe Berita Bersih untuk Frontend
 export interface News {
   id: string;
   title: string;
   slug: string;
-  created_at: string; // Sudah diformat ke string ISO/Readable
-  sections: NewsSection[]; // Array object
+  created_at: string;
+  sections: any[];
+  author_id?: number | null; // Update jadi nullable
 }
 
-// Tipe untuk Tabel Admin Berita
+export interface NewsRaw {
+  id: string;
+  title: string;
+  slug: string;
+  created_at: Date;
+  sections: string;
+  author_id?: number | null; // Update jadi nullable
+}
+
 export interface NewsListItem {
   id: string;
   title: string;
   slug: string;
   created_at: string;
+  author_id?: number | null; // Izinkan null/undefined
 }
 
 // Tipe untuk Form Input Berita
@@ -133,6 +133,15 @@ export interface NewsFormData {
   title: string;
   sections: NewsSection[];
   // Slug biasanya di-generate otomatis di server, tapi bisa manual
+}
+
+export interface NewsLog {
+  id: string;
+  user_name: string;
+  action: string;
+  details: string;
+  created_at: string;
+  news_title?: string;
 }
 
 // =========================================
@@ -183,3 +192,46 @@ export interface FooterFile {
   is_active: boolean;
   created_at: string | Date; // Serialized date
 }
+
+
+// =========================================
+// 7. ADDITIONAL DEFINITIONS
+// =========================================
+
+export interface NumericField {
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+export interface ContactInfo {
+  title: string;
+  icon: React.ElementType; 
+  details: string[];
+}
+
+export interface QuickLink {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+}
+
+export interface SocialLink {
+  name: string;
+  url: string;
+  icon: React.ElementType; 
+}
+
+export interface ProductCategory {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ElementType; 
+}
+
+export interface Industry {
+  icon: React.ElementType; 
+  name: string;
+  description: string;
+}
+

@@ -6,10 +6,9 @@ import { Phone } from 'lucide-react';
 
 interface CtaSectionProps {
   onContactClick: () => void;
-  onServicesClick: () => void;
 }
 
-export default function CtaSection({ onContactClick, onServicesClick }: CtaSectionProps) {
+export default function CtaSection({ onContactClick }: CtaSectionProps) {
   return (
     <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-700">
       <div className="container mx-auto px-6 text-center">

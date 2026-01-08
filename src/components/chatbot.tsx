@@ -122,32 +122,31 @@ export default function Chatbot() {
     setMessages([{ sender: "bot", text: chatFlow.start.botMessage }]);
   };
 
-  // Simulate typing delay for bot responses
-  const simulateBotTyping = () => {
-    setIsBotTyping(true);
-    setTimeout(() => {
-      const nextNode = chatFlow[currentNode];
-      setMessages((prev) => [...prev, { sender: "bot", text: nextNode.botMessage }]);
-      setIsBotTyping(false);
-    }, 1000);
-  };
-
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    // Hanya jalankan bot typing jika pesan terakhir adalah dari user
+
+    const simulateBotTyping = () => {
+      setIsBotTyping(true);
+      setTimeout(() => {
+        const nextNode = chatFlow[currentNode];
+        setMessages((prev) => [...prev, { sender: "bot", text: nextNode.botMessage }]);
+        setIsBotTyping(false);
+      }, 1000);
+    };
+
     if (messages.length > 0 && messages[messages.length - 1].sender === "user" && !isBotTyping) {
       simulateBotTyping();
     }
-  }, [messages, isBotTyping, simulateBotTyping]);
+  }, [messages, isBotTyping, currentNode]);
 
   const handleOptionClick = (option: { text: string; nextNode: ChatNodeKey }) => {
     const sender = "user" as const;
     const userMessage = { sender, text: option.text };
     const nextNodeKey = option.nextNode;
-    
+
     // Update history
     setHistory((prev) => [...prev, nextNodeKey]);
-    
+
     // Update current node and messages
     setCurrentNode(nextNodeKey);
     setMessages((prev) => [...prev, userMessage]);
@@ -158,14 +157,14 @@ export default function Chatbot() {
       const newHistory = [...history];
       newHistory.pop(); // Remove current node
       const prevNode = newHistory[newHistory.length - 1];
-      
+
       setHistory(newHistory);
       setCurrentNode(prevNode);
-      
+
       // Tambahkan pesan bot hanya jika belum ada di chat history
       const prevNodeData = chatFlow[prevNode];
       const lastMessage = messages[messages.length - 1];
-      
+
       // Cek apakah pesan terakhir bukan dari bot atau bukan pesan dari node sebelumnya
       if (!lastMessage || lastMessage.sender !== "bot" || lastMessage.text !== prevNodeData.botMessage) {
         setMessages((prev) => [...prev, { sender: "bot", text: prevNodeData.botMessage }]);
@@ -215,7 +214,7 @@ export default function Chatbot() {
                   </div>
                 </div>
               ))}
-              
+
               {/* Bot typing indicator */}
               {isBotTyping && (
                 <div className="flex justify-start">
@@ -228,7 +227,7 @@ export default function Chatbot() {
                   </div>
                 </div>
               )}
-              
+
               <div ref={chatEndRef} />
             </div>
           </div>
@@ -244,7 +243,7 @@ export default function Chatbot() {
                 <span>Kembali</span>
               </button>
             )}
-            
+
             {/* Special content for certain nodes */}
             {currentNode === "answer_contact" && (
               <div className="mb-3 bg-blue-50 p-3 rounded-lg">
@@ -255,7 +254,7 @@ export default function Chatbot() {
                 ))}
               </div>
             )}
-            
+
             {currentNode === "answer_services" && (
               <div className="mb-3">
                 <p className="text-sm text-gray-700 mb-2">Pilih layanan untuk detail:</p>
@@ -272,7 +271,7 @@ export default function Chatbot() {
                 </div>
               </div>
             )}
-            
+
             {currentNode === "answer_products" && (
               <div className="mb-3">
                 <p className="text-sm text-gray-700 mb-2">Kategori produk:</p>
@@ -289,7 +288,7 @@ export default function Chatbot() {
                 </div>
               </div>
             )}
-            
+
             {/* Regular options */}
             <div className="space-y-2">
               {chatFlow[currentNode].options.map((option, index) => (

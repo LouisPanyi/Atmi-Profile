@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Mail,
   Phone,
@@ -55,7 +55,6 @@ export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [countdown, setCountdown] = useState(5);
-  const [serverMessage, setServerMessage] = useState<{success: boolean, text: string} | null>(null);
 
   // --- VALIDASI ---
   const validateForm = () => {
@@ -133,23 +132,18 @@ export default function ContactForm() {
     return () => urls.forEach((url) => URL.revokeObjectURL(url));
   }, [files]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    setServerMessage(null);
 
     try {
       const fd = new FormData();
-      // Kita kirim phone & message dari input, sisanya (nama/email) diambil dari session di server
       fd.append("phone", formData.phone);
       fd.append("message", formData.message);
-      
-      // Append files
       files.forEach((f) => fd.append("files", f, f.name));
 
-      // Panggil Server Action
       const result = await sendContactMessage(fd);
 
       if (!result.success) {
@@ -161,10 +155,10 @@ export default function ContactForm() {
       setFormData({ phone: "", message: "" });
       setFiles([]);
       
-    } catch (error: any) {
+    } catch (error: unknown) { // Gunakan unknown
       console.error("Submit error:", error);
-      setErrors({ submit: error.message || "Terjadi kesalahan pada sistem." });
-      setServerMessage({ success: false, text: error.message });
+      const msg = error instanceof Error ? error.message : "Terjadi kesalahan pada sistem.";
+      setErrors({ submit: msg });
     } finally {
       setIsSubmitting(false);
     }

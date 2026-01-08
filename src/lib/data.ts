@@ -2,13 +2,15 @@
 import { sql } from "@vercel/postgres";
 import { unstable_noStore as noStore } from "next/cache";
 import type { 
+  DownloadLog,
+  FooterFile,
   News, 
+  NewsLog, 
   NewsRaw, 
   Product, 
   ProductRaw, 
   ProductTableRow, 
-  UserRow, 
-  Pagination 
+  UserRow
 } from "@/lib/definitions";
 
 const ITEMS_PER_PAGE = 6; // Sesuaikan jumlah item per halaman
@@ -22,20 +24,20 @@ export async function fetchFilteredNews(query: string, currentPage: number) {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
-    // ILIKE digunakan untuk pencarian case-insensitive di Postgres
+    // TAMBAHKAN author_id DI SINI
     const { rows } = await sql<NewsRaw>`
-      SELECT id, title, slug, created_at, sections
+      SELECT id, title, slug, created_at, sections, author_id
       FROM news
       WHERE title ILIKE ${`%${query}%`} OR sections ILIKE ${`%${query}%`}
       ORDER BY created_at DESC
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
 
-    // Mapping dari format database (Raw) ke format Aplikasi (Clean)
     return rows.map((row) => ({
       ...row,
       created_at: new Date(row.created_at).toISOString(),
       sections: typeof row.sections === 'string' ? JSON.parse(row.sections) : row.sections,
+      author_id: row.author_id, // Pastikan ini ter-mapping
     })) as News[];
   } catch (error) {
     console.error("Database Error (fetchFilteredNews):", error);
@@ -104,6 +106,34 @@ export async function fetchNewsById(id: string) {
   } catch (error) {
     console.error("Database Error (fetchNewsById):", error);
     throw new Error("Gagal mengambil detail berita.");
+  }
+}
+
+export async function fetchNewsLogs() {
+  noStore();
+  try {
+    const { rows } = await sql`
+      SELECT
+        nl.id,
+        nl.action,
+        nl.details,
+        nl.created_at,
+        u.name as user_name,
+        n.title as news_title
+      FROM news_logs nl
+      LEFT JOIN users u ON nl.user_id = u.id
+      LEFT JOIN news n ON nl.news_id = n.id
+      ORDER BY nl.created_at DESC
+      LIMIT 100
+    `;
+
+    return rows.map((row) => ({
+      ...row,
+      created_at: new Date(row.created_at).toISOString(),
+    })) as NewsLog[];
+  } catch (error) {
+    console.error("Database Error (fetchNewsLogs):", error);
+    throw new Error("Gagal mengambil log aktivitas berita.");
   }
 }
 
@@ -206,6 +236,47 @@ export async function fetchCardData() {
   } catch (error) {
     console.error("Database Error (fetchCardData):", error);
     throw new Error("Gagal mengambil data dashboard.");
+  }
+}
+
+// ============================================================================
+// 5. DOWNLOAD LOGS
+// ============================================================================
+
+export async function fetchFooterFiles() {
+  noStore();
+  try {
+    // Mengambil semua file untuk ditampilkan di tabel Admin
+    const { rows } = await sql<FooterFile>`
+      SELECT id, category, title, file_url, file_type, is_active, created_at
+      FROM footer_files
+      ORDER BY created_at DESC
+    `;
+    return rows;
+  } catch (error) {
+    console.error("Database Error (fetchFooterFiles):", error);
+    throw new Error("Gagal mengambil daftar file informasi.");
+  }
+}
+
+export async function fetchDownloadLogs() {
+  noStore();
+  try {
+    const { rows } = await sql<DownloadLog>`
+      SELECT id, email, file_title, category, downloaded_at
+      FROM download_logs
+      ORDER BY downloaded_at DESC
+      LIMIT 100
+    `;
+    
+    // Pastikan date dikonversi ke string ISO agar aman untuk Client Component
+    return rows.map(row => ({
+      ...row,
+      downloaded_at: new Date(row.downloaded_at).toISOString()
+    })) as DownloadLog[];
+  } catch (error) {
+    console.error("Database Error (fetchDownloadLogs):", error);
+    throw new Error("Gagal mengambil riwayat download.");
   }
 }
 

@@ -1,9 +1,10 @@
-// src/components/kontak/sections/MapSection.tsx
+"use client";
+
 import MapLoader from '@/components/kontak/map-loader';
 
 export default function MapSection() {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <div id="maps" className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 scroll-mt-24">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Lokasi Kami</h2>
       <MapLoader />
     </div>

@@ -1,17 +1,32 @@
 import Link from "next/link";
 import { sql } from "@vercel/postgres";
 import { UserPlus } from "lucide-react";
-import UsersTable from "@/components/admin/users/table"; // Kita buat file ini di bawah
+import UsersTable, { TableUser } from "@/components/admin/users/table"; 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { redirect } from "next/navigation"; // <--- 1. IMPORT INI
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsersPage() {
   const session = await getServerSession(authOptions);
   
-  // Ambil semua user kecuali password
-  const { rows: users } = await sql`
+  // LOGIKA KEAMANAN (Defense in Depth)
+  // 1. Cek apakah user login?
+  if (!session) {
+    redirect("/login");
+  }
+
+  // 2. Cek apakah role-nya ADMIN? (INI YANG SEBELUMNYA HILANG)
+  // Jika news_writer (atau role lain) mencoba masuk, tendang mereka keluar.
+  if (session.user.role !== "admin") {
+    // Redirect ke halaman dashboard utama mereka atau halaman berita
+    redirect("/admin"); 
+  }
+
+  // --- Jika lolos pengecekan di atas, baru jalankan query database ---
+
+  const { rows } = await sql<TableUser>`
     SELECT id, name, email, role, created_at 
     FROM users 
     ORDER BY created_at DESC
@@ -31,7 +46,7 @@ export default async function AdminUsersPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <UsersTable users={users} currentUserId={session?.user?.id || ""} />
+        <UsersTable users={rows} currentUserId={session?.user?.id || ""} />
       </div>
     </div>
   );

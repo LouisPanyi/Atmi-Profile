@@ -148,13 +148,21 @@ export default function CertificateModal({ isOpen, onClose, fileUrl, title }: Ce
     if (isPdf) return;
     setDragging(false);
     lastPointRef.current = null;
-    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { }
   };
 
   const zoomIn = () => setZoom((z) => clamp(Number((z + 0.5).toFixed(3)), ZOOM_MIN, ZOOM_MAX));
   const zoomOut = () => setZoom((z) => clamp(Number((z - 0.5).toFixed(3)), ZOOM_MIN, ZOOM_MAX));
   const resetView = () => { setZoom(1); setPos({ x: 0, y: 0 }); };
-  const onDoubleClick = () => { if (!isPdf) (zoom === 1 ? setZoom(2) : resetView()); };
+  const onDoubleClick = () => {
+    if (!isPdf) {
+      if (zoom === 1) {
+        setZoom(2);
+      } else {
+        resetView();
+      }
+    }
+  };
 
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -194,7 +202,7 @@ export default function CertificateModal({ isOpen, onClose, fileUrl, title }: Ce
                 aria-label="Tutup modal"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
@@ -231,7 +239,7 @@ export default function CertificateModal({ isOpen, onClose, fileUrl, title }: Ce
                     title="Perkecil"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
                     </svg>
                   </button>
                   <span className="px-2 text-sm tabular-nums w-14 text-center">{Math.round(zoom * 100)}%</span>
@@ -243,7 +251,7 @@ export default function CertificateModal({ isOpen, onClose, fileUrl, title }: Ce
                     title="Perbesar"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                   </button>
                   <button

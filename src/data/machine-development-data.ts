@@ -48,7 +48,7 @@ export const machineDevelopmentData: { [key: string]: MDCContent } = {
         details: [
             { label: 'Proses Desain Kami', items: ['Analisis kebutuhan dan spesifikasi klien', 'Pemodelan 3D dan simulasi pergerakan', 'Analisis Kekuatan Elemen (FEA)', 'Pemilihan material yang tepat', 'Pembuatan gambar kerja detail untuk manufaktur'] }
         ],
-        capabilities: ['SolidWorks', 'AutoCAD', 'ANSYS', 'CATIA'],
+        capabilities: ['SolidWorks', 'ActCAD', 'ZW3D'],
         images: [
             '/images/machine-development/design/design1.jpg'
         ],

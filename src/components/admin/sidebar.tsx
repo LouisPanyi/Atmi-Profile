@@ -12,7 +12,8 @@ import {
   Menu,
   X,
   ChevronUp,
-  Package
+  Package,
+  Download
 } from "lucide-react";
 import { useState } from "react";
 
@@ -51,7 +52,7 @@ export default function Sidebar() {
     {
       name: "Informasi",
       href: "/admin/informasi",
-      icon: User,
+      icon: Download,
       roles: ["admin"]
     },
   ];

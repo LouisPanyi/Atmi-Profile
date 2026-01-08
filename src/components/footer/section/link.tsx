@@ -7,22 +7,11 @@ import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
-
-interface QuickLink {
-  name: string;
-  href: string;
-  icon: React.ComponentType<any>;
-}
+import { QuickLink } from "@/lib/definitions";
 
 export interface IndustryLogo {
   name: string;
   src: string;
-  /**
-   * Pilihan render logo:
-   * - "original": warna asli (default)
-   * - "mono": grayscale (seragam), tidak mengubah brightness
-   * - "inverse": negatif/putih untuk logo gelap (hindari jika ingin warna asli)
-   */
   mode?: "original" | "mono" | "inverse";
 }
 

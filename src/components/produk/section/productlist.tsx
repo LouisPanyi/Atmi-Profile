@@ -10,7 +10,7 @@ import SearchBar from '@/components/produk/component/searchbar';
 
 // Tambahkan Interface Props
 interface ProductListSectionProps {
-  initialProducts: any[]; 
+  initialProducts: Product[]; 
 }
 
 export default function ProductListSection({ initialProducts }: ProductListSectionProps) {

@@ -1,7 +1,7 @@
 // src/app/tentang/page.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Head from 'next/head';
 import HeroSection from '@/components/tentang/section/hero';
 import CompanyHistorySection from '@/components/tentang/section/history';
@@ -12,18 +12,15 @@ import { HeartHandshake, Lightbulb, ShieldCheck, Star, Users } from 'lucide-reac
 import Breadcrumb from '@/components/breadcrumb';
 
 export default function AboutPage() {
-  const [isVisible, setIsVisible] = useState(false);
-
   useEffect(() => {
-    setIsVisible(true);
     document.title = "Tentang | Sejarah, Visi Misi & Nilai Perusahaan";
-    
+
     // Override meta tags
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute('content', "Ketahui lebih dalam tentang ATMI Surakarta melalui sejarah, visi misi, nilai-nilai perusahaan, dan sistem manajemen kualitas kami.");
     }
-    
+
     const metaKeywords = document.querySelector('meta[name="keywords"]');
     if (metaKeywords) {
       metaKeywords.setAttribute('content', "ATMI Surakarta, politeknik, sejarah, visi misi, nilai perusahaan, manajemen kualitas, pendidikan vokasi");
@@ -69,7 +66,7 @@ export default function AboutPage() {
         <meta property="twitter:description" content="Ketahui lebih dalam tentang ATMI Surakarta melalui sejarah, visi misi, nilai-nilai perusahaan, dan sistem manajemen kualitas kami." />
         <meta property="twitter:image" content="/images/twitter-image-tentang.jpg" />
       </Head>
-      
+
       <div className="bg-white">
         <HeroSection />
         <div className="container mx-auto px-6 mt-8">

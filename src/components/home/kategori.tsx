@@ -1,13 +1,7 @@
 // src/components/produk/section/ProductCategoriesSection.tsx
 import { motion } from 'framer-motion';
 import { Factory, Building, Users, Cpu } from 'lucide-react';
-
-interface ProductCategory {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ComponentType<any>;
-}
+import { ProductCategory } from '@/lib/definitions';
 
 export default function ProductCategoriesSection() {
   const categories: ProductCategory[] = [

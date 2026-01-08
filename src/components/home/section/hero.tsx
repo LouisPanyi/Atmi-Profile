@@ -6,17 +6,13 @@ import Image from 'next/image';
 import {  Phone, MapPin, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface HeroSectionProps {
-  onContactClick: () => void;
-}
-
 interface HeroImage {
   id: number;
   src: string;
   alt: string;
 }
 
-export default function HeroSection({ onContactClick }: HeroSectionProps) {
+export default function HeroSection() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [direction, setDirection] = useState<'left' | 'right'>('left');
 

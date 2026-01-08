@@ -1,5 +1,3 @@
-// File: src/components/layanan/section/work-fabrication.tsx
-// ============================================================================
 "use client";
 
 import { useState } from "react";
@@ -9,13 +7,38 @@ import ImageSliderWithVideo from "@/components/image-video";
 import CoatingDetailSection from "@/components/layanan/section/coating-detail";
 import { coatingDetailData } from "@/data/coating-data";
 
+// Definisi Interface untuk Data
+interface FabricationDetail {
+  label: string;
+  items: string[];
+}
+
+interface FabricationItem {
+  title?: string;
+  description?: string;
+  capabilities?: string[];
+  images?: string[];
+  video?: string;
+  details?: FabricationDetail[];
+}
+
 export default function WorkFabrication() {
   const serviceKeys = Object.keys(fabricationData || {});
   const [activeService, setActiveService] = useState(serviceKeys[0] || "");
-  const currentData = (fabricationData as any)?.[activeService] || {};
+
+  // Casting aman ke Record
+  const dataMap = fabricationData as Record<string, FabricationItem>;
+  const currentData = dataMap[activeService] || {};
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+    <motion.div 
+      // PERBAIKAN: Tambahkan ID untuk target scroll dari footer
+      id="work-fabrication"
+      className="scroll-mt-24" 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      transition={{ duration: 0.3 }}
+    >
       {/* Lead */}
       <div className="mb-8">
         <h3 className="text-2xl font-bold text-slate-900">Work Fabrication</h3>
@@ -40,11 +63,10 @@ export default function WorkFabrication() {
                   key={key}
                   onClick={() => setActiveService(key)}
                   aria-label={`Pilih layanan ${key}`}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    active
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all relative hover:z-10 ${active
                       ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow"
                       : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
-                  }`}
+                    }`}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
@@ -86,7 +108,7 @@ export default function WorkFabrication() {
                     Kemampuan Layanan
                   </h5>
                   <div className="flex flex-wrap gap-2">
-                    {currentData.capabilities.map((cap: string, i: number) => (
+                    {currentData.capabilities.map((cap, i) => (
                       <span
                         key={i}
                         className="rounded-full border border-blue-200 bg-blue-50 text-blue-800 px-3 py-1.5 text-sm"
@@ -116,11 +138,11 @@ export default function WorkFabrication() {
               {/* Details */}
               {!!currentData.details?.length && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentData.details.map((detail: any, idx: number) => (
+                  {currentData.details.map((detail, idx) => (
                     <div key={idx} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
                       <p className="mb-2 font-medium text-slate-800">{detail.label}:</p>
                       <ul className="space-y-1">
-                        {(detail.items || []).map((item: string, itemIdx: number) => (
+                        {(detail.items || []).map((item, itemIdx) => (
                           <li key={itemIdx} className="flex items-start text-slate-700">
                             <span className="mr-2 text-blue-600">•</span>
                             {item}

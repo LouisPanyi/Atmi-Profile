@@ -1,22 +1,34 @@
-import { sql } from "@vercel/postgres";
-import InformationClient from "@/components/admin/informasi/client-page";
+import { Metadata } from "next";
+import { fetchFooterFiles, fetchDownloadLogs } from "@/lib/data";
+import InformasiClientPage from "@/components/admin/informasi/client-page";
+import { getServerSession } from "next-auth"; // Import
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Import
+import { redirect } from "next/navigation"; // Import
 
-export default async function AdminInformasiPage() {
-  // Fetch semua file, urutkan dari yang terbaru
-  const { rows } = await sql`
-    SELECT * FROM footer_files ORDER BY created_at DESC
-  `;
+export const metadata: Metadata = {
+  title: "Kelola Informasi & Download | Admin Panel",
+};
+
+export default async function InformasiPage() {
+  // 1. LOGIKA KEAMANAN
+  const session = await getServerSession(authOptions);
+
+  if (!session) redirect("/login");
+
+  // Hanya Admin yang boleh masuk sini
+  if (session.user.role !== "admin") {
+    redirect("/admin");
+  }
+
+  // 2. Ambil data aman
+  const [files, logs] = await Promise.all([
+    fetchFooterFiles(),
+    fetchDownloadLogs()
+  ]);
 
   return (
-    <div className="p-6 w-full">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">Manajemen File Informasi (Footer)</h1>
-      <p className="text-gray-700 mb-8 max-w-2xl">
-        Kelola file yang akan ditampilkan di footer website. Pilih file untuk setiap kategori 
-        (Katalog, Presentasi, Profil) dan klik tombol <strong>Checklist</strong> untuk mengaktifkannya agar bisa didownload oleh pengunjung.
-      </p>
-      
-      {/* Kirim data ke Client Component */}
-      <InformationClient files={rows as any} />
+    <div className="p-8">
+      <InformasiClientPage files={files} logs={logs} />
     </div>
   );
 }

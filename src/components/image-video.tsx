@@ -13,7 +13,6 @@ interface ImageSliderWithVideoProps {
 export default function ImageSliderWithVideo({ images, video, channelName = 'PT ATMI SOLO' }: ImageSliderWithVideoProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [videoState, setVideoState] = useState<'idle' | 'loading' | 'playing' | 'ended'>('idle');
   const [isClient, setIsClient] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const videoRef = useRef<HTMLIFrameElement>(null);
@@ -39,7 +38,6 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
   useEffect(() => {
     setCurrentSlide(0);
     setIsVideoPlaying(false);
-    setVideoState('idle');
   }, [images, video]);
 
   useEffect(() => {
@@ -82,9 +80,6 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
     // Jika video sedang main, jangan auto advance
     if (isVideoPlaying) return;
 
-    // Tentukan batas slide terakhir
-    const lastSlideIndex = hasVideo ? safeImages.length : safeImages.length - 1;
-
     // Jika belum sampai slide terakhir (atau slide video), jalankan timer
     // Note: Kita membiarkan auto advance berjalan terus (looping) jika hanya gambar
     autoAdvanceIntervalRef.current = window.setInterval(() => {
@@ -112,7 +107,6 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
     if (currentSlide === safeImages.length && videoRef.current) {
       videoRef.current.contentWindow?.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
       setIsVideoPlaying(false);
-      setVideoState('idle');
     }
     setCurrentSlide(index);
     resetAutoAdvance();
@@ -131,14 +125,12 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
   };
 
   const handleVideoClick = () => {
-    setVideoState('loading');
     setIsVideoPlaying(true);
     resetAutoAdvance();
   };
 
   const handleVideoEnd = () => {
     setIsVideoPlaying(false);
-    setVideoState('ended');
   };
 
   const videoThumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : '';
@@ -219,7 +211,6 @@ export default function ImageSliderWithVideo({ images, video, channelName = 'PT 
                       onClick={() => {
                         videoRef.current?.contentWindow?.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
                         setIsVideoPlaying(false);
-                        setVideoState('ended');
                         setCurrentSlide(0);
                       }}
                       className="absolute top-4 right-4 z-20 bg-black/50 hover:bg-black/70 text-white p-2.5 rounded-full transition-all"

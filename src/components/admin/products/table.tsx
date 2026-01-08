@@ -9,6 +9,7 @@ import { Trash2, Edit, Package } from "lucide-react";
 import { deleteProduct } from "@/lib/actions";
 import ConfirmationModal from "@/components/admin/confirmation-modal";
 import type { ProductTableRow } from "@/lib/definitions";
+import type { ProductImage } from "@/data/product/product-types";
 
 export default function ProductsTable({ products }: { products: ProductTableRow[] }) {
   const router = useRouter();
@@ -32,24 +33,24 @@ export default function ProductsTable({ products }: { products: ProductTableRow[
       const res = await deleteProduct(formData);
       if (res.success) {
         setIsModalOpen(false);
-        router.refresh(); // Refresh data tanpa reload page
+        router.refresh(); 
       } else {
         alert(res.message);
       }
-    } catch (e) {
+    } catch {
       alert("Gagal menghapus produk.");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Helper untuk mendapatkan thumbnail dari JSON images
-  const getThumbnail = (imagesRaw: any) => {
+  // Helper untuk mendapatkan thumbnail
+  const getThumbnail = (imagesRaw: ProductImage[] | unknown) => {
     try {
-      const imgs = Array.isArray(imagesRaw) ? imagesRaw : [];
+      const imgs = Array.isArray(imagesRaw) ? (imagesRaw as ProductImage[]) : [];
       if (imgs.length === 0) return null;
-      // Cari yang featured, atau ambil yang pertama
-      const featured = imgs.find((i: any) => i.featured) || imgs[0];
+      
+      const featured = imgs.find((i) => i.featured) || imgs[0];
       return featured?.url || null;
     } catch {
       return null;
