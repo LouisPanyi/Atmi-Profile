@@ -70,8 +70,7 @@ export default function VisionMissionSection() {
               <blockquote className="relative">
                 <div className="absolute -left-3 top-0 text-4xl text-blue-600/20 select-none leading-none">“</div>
                 <p className="text-slate-700 leading-relaxed pl-3">
-                  Terciptanya masyarakat industri yang adil dan sejahtera, menghormati martabat manusia,
-                  dan bertanggung jawab atas keseimbangan lingkungan hidup.
+                 Terciptanya masyarakat industri yang adil dan sejahtera, menghormati martabat manusia, dan bertanggungjawab atas keseimbangan lingkungan hidup serta berkomitment tinggi untuk kepuasan Pemegang Saham, Pelanggan, Karyawan dan Masyarakat.
                 </p>
               </blockquote>
             </div>
@@ -91,8 +90,7 @@ export default function VisionMissionSection() {
               </div>
 
               <p className="text-slate-700 leading-relaxed mb-5">
-                Mendidik kaum muda menjadi tenaga profesional yang mampu membantu perkembangan bangsa menuju masyarakat industri yang adil dan makmur,
-                mempunyai tanggung jawab moral dan sosial yang terumuskan dalam trilogi <strong>4C</strong> :
+                Menjadi unit Perusahaan Manufaktur yang berbasis 4.0, professional, dan berprofit tinggi, menjunjung nilai kejujuran, integritas, etika dan moral bisnis yang tinggi, menjadi partner pendidikan Vokasi dalam mewujudkan pendampingan kepada Para Mahasiswa dan Siswa, yang mengedepankan  <strong>4C</strong> Competence, Conscience, Compassion dan Commitment. 
               </p>
 
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4" aria-label="Trilogi 4C">
@@ -106,7 +104,7 @@ export default function VisionMissionSection() {
                       <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-600 text-white">C1</span>
                       <h4 className="font-semibold text-slate-900">Competentia</h4>
                     </div>
-                    <p className="text-sm text-slate-600">Ketrampilan Teknis</p>
+                    <p className="text-sm text-slate-600">Kompetensi teknis baik pengetahuan maupun skills</p>
                   </div>
                 </li>
 
@@ -120,7 +118,7 @@ export default function VisionMissionSection() {
                       <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-600 text-white">C2</span>
                       <h4 className="font-semibold text-slate-900">Conscientia</h4>
                     </div>
-                    <p className="text-sm text-slate-600">Tanggung Jawab Moral</p>
+                    <p className="text-sm text-slate-600">Tanggung jawab moral, menggunakan suara hati yang terasah</p>
                   </div>
                 </li>
 
@@ -134,7 +132,7 @@ export default function VisionMissionSection() {
                       <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-600 text-white">C3</span>
                       <h4 className="font-semibold text-slate-900">Compassio</h4>
                     </div>
-                    <p className="text-sm text-slate-600">Pengarus Sosial &amp; Kegiatan Industri</p>
+                    <p className="text-sm text-slate-600">Perhatian terhadap sesama, terutama mereka yang menderita dan berkekurangan, pengarus sosial dan kegiatan industri.</p>
                   </div>
                 </li>
 
@@ -148,7 +146,7 @@ export default function VisionMissionSection() {
                       <span className="inline-flex px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-600 text-white">C4</span>
                       <h4 className="font-semibold text-slate-900">Commitment</h4>
                     </div>
-                    <p className="text-sm text-slate-600">Komitmen terhadap Tanggung Jawab</p>
+                    <p className="text-sm text-slate-600">Komitmen dalam berubah, berkembang dan mencapai tujuan bersama.</p>
                   </div>
                 </li>
               </ul>

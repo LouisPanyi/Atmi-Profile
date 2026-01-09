@@ -5,12 +5,12 @@ import { NextResponse } from 'next/server';
 
 // Data Dummy User (Admin)
 async function seedUsers(client: VercelPoolClient) {
-    // Hash password "123456"
-    const hashedPassword = await bcrypt.hash('123456', 10);
+  // Hash password "123456"
+  const hashedPassword = await bcrypt.hash('123456', 10);
 
-    await client.sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+  await client.sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
-    await client.sql`
+  await client.sql`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255),
@@ -21,9 +21,9 @@ async function seedUsers(client: VercelPoolClient) {
     );
   `;
 
-    // Insert Admin User
-    // ON CONFLICT DO NOTHING agar tidak error jika dijalankan 2x
-    await client.sql`
+  // Insert Admin User
+  // ON CONFLICT DO NOTHING agar tidak error jika dijalankan 2x
+  await client.sql`
     INSERT INTO users (name, email, password, role)
     VALUES ('Admin', 'admin@atmisolo.co.id', ${hashedPassword}, 'admin')
     ON CONFLICT (email) DO NOTHING;
@@ -31,7 +31,7 @@ async function seedUsers(client: VercelPoolClient) {
 }
 
 async function seedNews(client: VercelPoolClient) {
-    await client.sql`
+  await client.sql`
     CREATE TABLE IF NOT EXISTS news (
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
@@ -42,7 +42,7 @@ async function seedNews(client: VercelPoolClient) {
     );
   `;
 
-    await client.sql`
+  await client.sql`
     CREATE TABLE IF NOT EXISTS news_logs (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
@@ -53,13 +53,13 @@ async function seedNews(client: VercelPoolClient) {
     );
   `;
 
-    // Dummy News
-    // Note: sections disimpan sebagai JSON String karena di data.ts Anda melakukan JSON.parse
-    const dummySections = JSON.stringify([
-        { type: 'paragraph', content: 'Ini adalah konten berita pertama sebagai contoh seeding.' }
-    ]);
+  // Dummy News
+  // Note: sections disimpan sebagai JSON String karena di data.ts Anda melakukan JSON.parse
+  const dummySections = JSON.stringify([
+    { type: 'paragraph', content: 'Ini adalah konten berita pertama sebagai contoh seeding.' }
+  ]);
 
-    await client.sql`
+  await client.sql`
     INSERT INTO news (title, sections, slug, author_id)
     VALUES 
     ('Berita Percobaan Pertama', ${dummySections}, 'berita-percobaan-pertama', 1)
@@ -68,7 +68,7 @@ async function seedNews(client: VercelPoolClient) {
 }
 
 async function seedProducts(client: VercelPoolClient) {
-    await client.sql`
+  await client.sql`
     CREATE TABLE IF NOT EXISTS products (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
@@ -84,7 +84,7 @@ async function seedProducts(client: VercelPoolClient) {
 }
 
 async function seedFooterFiles(client: VercelPoolClient) {
-    await client.sql`
+  await client.sql`
     CREATE TABLE IF NOT EXISTS footer_files (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
       category VARCHAR(50) NOT NULL,
@@ -96,7 +96,7 @@ async function seedFooterFiles(client: VercelPoolClient) {
     );
   `;
 
-    await client.sql`
+  await client.sql`
     CREATE TABLE IF NOT EXISTS download_logs (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
       email VARCHAR(255) NOT NULL,
@@ -107,38 +107,55 @@ async function seedFooterFiles(client: VercelPoolClient) {
   `;
 }
 
+async function seedMessages(client: VercelPoolClient) {
+  await client.sql`
+    CREATE TABLE IF NOT EXISTS messages (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+     name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+  message TEXT NOT NULL,
+  user_image TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+  `;
+}
+
+
+
 export async function GET(request: Request) {
-    const SECRET_KEY = process.env.SEED_SECRET_KEY;
+  const SECRET_KEY = process.env.SEED_SECRET_KEY;
 
-    const { searchParams } = new URL(request.url);
-    
-    const token = searchParams.get('token'); 
-    // 3. Validasi
-    if (!SECRET_KEY || token !== SECRET_KEY) {
-        return NextResponse.json(
-            { error: 'Unauthorized: Invalid or missing token.' },
-            { status: 401 }
-        );
-    }
+  const { searchParams } = new URL(request.url);
 
-    const client = await db.connect();
+  const token = searchParams.get('token');
+  // 3. Validasi
+  if (!SECRET_KEY || token !== SECRET_KEY) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Invalid or missing token.' },
+      { status: 401 }
+    );
+  }
 
-    try {
-        await client.sql`BEGIN`;
+  const client = await db.connect();
 
-        // Urutan penting karena ada Foreign Key (users harus duluan)
-        await seedUsers(client);
-        await seedNews(client); // News butuh users
-        await seedProducts(client);
-        await seedFooterFiles(client);
+  try {
+    await client.sql`BEGIN`;
 
-        await client.sql`COMMIT`;
+    // Urutan penting karena ada Foreign Key (users harus duluan)
+    await seedUsers(client);
+    await seedNews(client); // News butuh users
+    await seedProducts(client);
+    await seedFooterFiles(client);
+    await seedMessages(client);
 
-        return NextResponse.json({ message: 'Database seeded successfully' }, { status: 200 });
-    } catch (error) {
-        await client.sql`ROLLBACK`;
-        return NextResponse.json({ error: (error as Error).message }, { status: 500 });
-    } finally {
-        client.release(); // Penting! Lepas koneksi
-    }
+    await client.sql`COMMIT`;
+
+    return NextResponse.json({ message: 'Database seeded successfully' }, { status: 200 });
+  } catch (error) {
+    await client.sql`ROLLBACK`;
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  } finally {
+    client.release(); // Penting! Lepas koneksi
+  }
 }

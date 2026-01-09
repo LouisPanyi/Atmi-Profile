@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { del, put } from "@vercel/blob";
 import bcrypt from "bcrypt";
+import nodemailer from "nodemailer";
 
 async function checkAdminOnly() {
   const session = await getServerSession(authOptions);
@@ -362,15 +363,13 @@ export async function updateProfile(formData: FormData) {
 
 export async function sendContactMessage(formData: FormData) {
   try {
-    // 1. CEK SESSION
+    // --- 1. CEK SESSION & VALIDASI ---
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
       return { success: false, message: "Akses ditolak. Harap login terlebih dahulu." };
     }
 
-    // 2. CEK ROLE (Hanya 'user' / Google Login yang boleh)
-    // Admin dan News Writer akan ditolak di sini
     if (session.user.role !== "user") {
       return {
         success: false,
@@ -378,30 +377,100 @@ export async function sendContactMessage(formData: FormData) {
       };
     }
 
-    // 3. Ambil Data Form
+    // --- 2. AMBIL DATA FORM ---
     const phone = formData.get("phone") as string;
     const message = formData.get("message") as string;
+    const files = formData.getAll("files") as File[]; // Ambil file
 
-    // Ambil data aman dari session
     const senderName = session.user.name;
     const senderEmail = session.user.email;
-    const senderImage = session.user.image; // Opsional: simpan foto profil google
+    const senderImage = session.user.image;
 
     if (!message || message.trim() === "") {
       return { success: false, message: "Pesan tidak boleh kosong." };
     }
 
-    // 4. Simpan ke Database
+    // --- 3. SIMPAN KE DATABASE (LOGIKA LAMA) ---
+    // Pastikan tabel messages sudah dibuat seperti panduan sebelumnya
     await sql`
       INSERT INTO messages (name, email, phone, message, user_image, created_at)
       VALUES (${senderName}, ${senderEmail}, ${phone}, ${message}, ${senderImage}, NOW())
     `;
 
-    return { success: true, message: "Pesan berhasil dikirim!" };
+    // --- 4. KIRIM EMAIL (LOGIKA BARU - PINDAHAN DARI API) ---
+    
+    // a. Konfigurasi Transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
+
+    // b. Proses Attachments (Ubah File Next.js ke Buffer Node.js)
+    const attachments = await Promise.all(
+      files.map(async (file) => {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        return {
+          filename: file.name,
+          content: buffer,
+          contentType: file.type,
+        };
+      })
+    );
+
+    // c. Setup Email
+    const mailOptions = {
+      from: `"${senderName} (via Website)" <${process.env.GMAIL_USER}>`,
+      to: ["marketing@atmisolo.co.id", "marketing@atmi.co.id"], // Email tujuan
+      replyTo: senderEmail || undefined,
+      subject: `[Website ATMI] Pesan Baru dari: ${senderName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #003366;">Pesan Baru dari Formulir Kontak</h2>
+          <p>Data tersimpan di Database & Dashboard Admin. Berikut detailnya:</p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #ddd; width: 120px;"><strong>Nama</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #ddd;">${senderName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Email</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #ddd;"><a href="mailto:${senderEmail}">${senderEmail}</a></td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Telepon</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #ddd;">${phone || "-"}</td>
+            </tr>
+          </table>
+
+          <p><strong>Isi Pesan:</strong></p>
+          <blockquote style="background: #f9f9f9; padding: 15px; border-left: 4px solid #003366; margin: 0;">
+            ${message.replace(/\n/g, "<br>")}
+          </blockquote>
+          
+          <br/>
+          <hr style="border: 0; border-top: 1px solid #eee;" />
+          <p style="font-size: 12px; color: #888;">Email ini dikirim otomatis dari Website PT ATMI Solo.</p>
+        </div>
+      `,
+      attachments: attachments,
+    };
+
+    // d. Kirim!
+    await transporter.sendMail(mailOptions);
+
+    return { success: true, message: "Pesan berhasil disimpan dan dikirim ke email!" };
 
   } catch (error) {
-    console.error("Contact Error:", error);
-    return { success: false, message: "Gagal mengirim pesan." };
+    console.error("Action Error:", error);
+    // Kita return success false, tapi kalau DB berhasil dan Email gagal, 
+    // technically data sudah masuk. Sesuaikan pesan error jika perlu.
+    return { success: false, message: "Gagal memproses pesan. Silakan coba lagi." };
   }
 }
 
