@@ -107,7 +107,7 @@ export interface News {
   title: string;
   slug: string;
   created_at: string;
-  sections: any[];
+  sections: NewsSection[];
   author_id?: number | null; // Update jadi nullable
 }
 
@@ -235,3 +235,6 @@ export interface Industry {
   description: string;
 }
 
+export type Props = {
+  params: { slug: string };
+};

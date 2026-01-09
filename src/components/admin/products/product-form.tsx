@@ -176,34 +176,26 @@ export default function ProductForm({ initialData }: ProductFormProps) {
     });
   };
 
-const validateBeforeSubmit = (): string => {
+  const validateBeforeSubmit = (): string => {
     if (!name.trim() || !category.trim()) return "Nama dan Kategori wajib diisi.";
     if (images.length === 0) return "Harap upload minimal 1 gambar.";
 
-    // Pastikan ada featured (harus 1)
     const featuredCount = images.filter((i) => i.featured).length;
     if (featuredCount !== 1) return "Harus ada tepat 1 gambar Utama (featured).";
 
-    // Validasi Spesifikasi: Duplikasi & Kelengkapan
-    const keys = specs.map((s) => s.key.trim()).filter(Boolean);
     const seen = new Set<string>();
 
-    for (const [index, s] of specs.entries()) {
+    for (const s of specs) { 
       const k = s.key.trim();
       const v = s.value.trim();
 
-      // 1. Cek Duplikasi Judul
       if (k) {
         const norm = k.toLowerCase();
         if (seen.has(norm)) return `Judul spesifikasi tidak boleh sama: "${k}" duplikat.`;
         seen.add(norm);
       }
 
-      // 2. Cek Kelengkapan Pasangan (Validasi Baru)
-      // Jika Judul diisi tapi Nilai kosong -> Error
       if (k && !v) return `Nilai spesifikasi untuk "${k}" wajib diisi.`;
-      
-      // Jika Nilai diisi tapi Judul kosong -> Error
       if (!k && v) return `Judul spesifikasi untuk nilai "${v}" wajib diisi.`;
     }
 
@@ -439,7 +431,7 @@ const validateBeforeSubmit = (): string => {
           <div className="space-y-4">
             {specs.map((spec, idx) => {
               const normalized = spec.key.trim().toLowerCase();
-              
+
               // Cek Duplikat
               const isDuplicate =
                 normalized !== "" &&
@@ -451,7 +443,7 @@ const validateBeforeSubmit = (): string => {
 
               return (
                 <div key={idx} className="flex gap-4 items-start">
-                  
+
                   {/* INPUT JUDUL (KEY) */}
                   <div className="flex-1 relative">
                     <input
@@ -459,9 +451,8 @@ const validateBeforeSubmit = (): string => {
                       placeholder="Label (mis: Warna)"
                       value={spec.key}
                       onChange={(e) => updateSpec(idx, "key", e.target.value)}
-                      className={`${inputClass} ${
-                        isDuplicate || isEmptyKey ? "border-red-500 bg-red-50 focus:ring-red-500" : ""
-                      }`}
+                      className={`${inputClass} ${isDuplicate || isEmptyKey ? "border-red-500 bg-red-50 focus:ring-red-500" : ""
+                        }`}
                     />
                     {isDuplicate && (
                       <p className="text-[11px] text-red-600 mt-1 absolute -bottom-5 left-1 font-medium">
@@ -482,11 +473,10 @@ const validateBeforeSubmit = (): string => {
                       placeholder="Nilai (mis: Putih)"
                       value={spec.value}
                       onChange={(e) => updateSpec(idx, "value", e.target.value)}
-                      className={`${inputClass} ${
-                        isEmptyValue ? "border-red-500 bg-red-50 focus:ring-red-500" : ""
-                      }`}
+                      className={`${inputClass} ${isEmptyValue ? "border-red-500 bg-red-50 focus:ring-red-500" : ""
+                        }`}
                     />
-                     {isEmptyValue && (
+                    {isEmptyValue && (
                       <p className="text-[11px] text-red-600 mt-1 absolute -bottom-5 left-1 font-medium">
                         *Wajib diisi
                       </p>

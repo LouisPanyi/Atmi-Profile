@@ -1,10 +1,10 @@
 // src/app/api/seed/route.ts
-import { db } from '@vercel/postgres';
+import { db, VercelPoolClient } from '@vercel/postgres';
 import bcrypt from 'bcrypt';
 import { NextResponse } from 'next/server';
 
 // Data Dummy User (Admin)
-async function seedUsers(client: any) {
+async function seedUsers(client: VercelPoolClient) {
     // Hash password "123456"
     const hashedPassword = await bcrypt.hash('123456', 10);
 
@@ -30,7 +30,7 @@ async function seedUsers(client: any) {
   `;
 }
 
-async function seedNews(client: any) {
+async function seedNews(client: VercelPoolClient) {
     await client.sql`
     CREATE TABLE IF NOT EXISTS news (
       id SERIAL PRIMARY KEY,
@@ -67,7 +67,7 @@ async function seedNews(client: any) {
   `;
 }
 
-async function seedProducts(client: any) {
+async function seedProducts(client: VercelPoolClient) {
     await client.sql`
     CREATE TABLE IF NOT EXISTS products (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -83,7 +83,7 @@ async function seedProducts(client: any) {
   `;
 }
 
-async function seedFooterFiles(client: any) {
+async function seedFooterFiles(client: VercelPoolClient) {
     await client.sql`
     CREATE TABLE IF NOT EXISTS footer_files (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,

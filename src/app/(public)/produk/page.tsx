@@ -6,6 +6,12 @@ import CTASection from '@/components/produk/section/cta';
 import DownloadButton from '@/components/produk/component/download-button';
 import { getAllProducts, getAllCategories } from '@/utils/product';
 import type { Product } from '@/lib/definitions'; // Pastikan import Product
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Katalog Produk - Furniture & Medical Equipment",
+  description: "Lihat katalog lengkap produk PT ATMI SOLO: School Furniture, Hospital Bed, Office System, dan custom fabrication.",
+};
 
 export const dynamic = "force-dynamic";
 

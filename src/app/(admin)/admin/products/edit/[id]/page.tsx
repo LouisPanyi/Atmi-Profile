@@ -6,11 +6,11 @@ import { fetchProductById } from "@/lib/data"; //
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>; // Ubah jadi Promise
 }
 
 export default async function EditProductPage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
 
   // 1. Ambil data menggunakan fungsi yang sudah kita buat di data.ts
   // Fungsi ini sudah mengembalikan tipe data 'Product' yang benar (atau null)

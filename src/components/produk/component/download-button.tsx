@@ -1,80 +1,101 @@
-// src/components/produk/download-button.tsx
 "use client";
 
 import { useState } from 'react';
+import { toast } from "react-hot-toast";
+import { Download, FileText } from 'lucide-react';
+import DownloadModal from '@/components/footer/download-modal'; // Menggunakan komponen modal yang sama dengan footer
 
 export default function DownloadButton() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  const handleDownload = async () => {
+  // Konfigurasi File Katalog (Sesuaikan URL jika berubah)
+  const catalogFile = {
+    displayName: "Katalog Produk 2024",
+    downloadName: "katalog-produk-atmi.pdf",
+    url: "/downloads/katalog2024.pdf",
+    category: "katalog" as const,
+  };
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmDownload = async (email: string) => {
     setIsDownloading(true);
-    setDownloadSuccess(false);
-    
+
     try {
-      const link = document.createElement('a');
-      link.href = '/downloads/katalog2024.pdf';
-      link.download = 'katalog-produk-atmi.pdf';
+      // 1. Catat log download ke database (API yang sama dengan Footer)
+      const response = await fetch("/api/downloads/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          fileName: catalogFile.displayName,
+          category: catalogFile.category,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Gagal menyimpan log");
+
+      // 2. Proses Download File
+      const link = document.createElement("a");
+      link.href = catalogFile.url;
+      link.download = catalogFile.downloadName;
+      link.target = "_blank";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Setelah download selesai
-      setTimeout(() => {
-        setDownloadSuccess(true);
-        setIsDownloading(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Download failed:', error);
+
+      toast.success("Download dimulai! Terima kasih.");
+      setIsModalOpen(false);
+
+    } catch (err) {
+      console.error("Download error:", err);
+      toast.error("Terjadi kesalahan saat memproses permintaan.");
+    } finally {
       setIsDownloading(false);
-      // Anda bisa menambahkan notifikasi error di sini
     }
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 text-center">
-      <h2 className="text-2xl md:text-3xl font-bold mb-4 text-gray-800">Download Katalog Produk</h2>
-      <p className="mb-6 text-gray-600 max-w-2xl mx-auto">
-        Dapatkan katalog lengkap produk kami dalam format PDF. Katalog berisi informasi detail tentang semua produk kami termasuk spesifikasi dan harga.
-      </p>
-      
-      <div className="flex flex-col items-center">
-        <button
-          onClick={handleDownload}
-          disabled={isDownloading}
-          className={`flex items-center justify-center font-medium py-3 px-8 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 ${
-            isDownloading 
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
-          {isDownloading ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Mengunduh...
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-              </svg>
-              Download Katalog
-            </>
-          )}
-        </button>
-        
-        {downloadSuccess && (
-          <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-lg flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            Katalog berhasil diunduh!
+    <section className="py-16 bg-gradient-to-br from-blue-50 to-white border-y border-blue-100/50">
+      <div className="container mx-auto px-4 text-center">
+        <div className="max-w-3xl mx-auto">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600">
+            <FileText size={32} />
           </div>
-        )}
+          
+          <h2 className="text-2xl md:text-3xl font-bold mb-4 text-gray-900">
+            Download Katalog Lengkap
+          </h2>
+          
+          <p className="mb-8 text-gray-600 leading-relaxed text-lg">
+            Dapatkan informasi detail mengenai spesifikasi teknis, varian, dan fitur unggulan seluruh produk kami dalam satu dokumen PDF yang praktis.
+          </p>
+          
+          <button
+            onClick={handleOpenModal}
+            className="group relative inline-flex items-center justify-center px-8 py-4 font-semibold text-white transition-all duration-200 bg-blue-600 rounded-full hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600"
+          >
+            <Download className="w-5 h-5 mr-3 transition-transform group-hover:animate-bounce" />
+            <span>Unduh Katalog PDF</span>
+          </button>
+          
+          <p className="mt-4 text-sm text-gray-400">
+            Format: PDF • Ukuran: ~5 MB
+          </p>
+        </div>
+
+        {/* Integrasi Modal yang sama dengan Footer */}
+        <DownloadModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={handleConfirmDownload}
+          fileName={catalogFile.displayName}
+          isLoading={isDownloading}
+        />
       </div>
-    </div>
+    </section>
   );
 }

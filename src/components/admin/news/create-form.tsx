@@ -14,7 +14,6 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-
 import { createNews, updateNews } from "@/lib/actions";
 import ConfirmationModal from "@/components/admin/confirmation-modal";
 
@@ -231,20 +230,16 @@ export default function NewsForm({ initialData, isEditMode = false }: NewsFormPr
       formData.append("id", initialData.id);
     }
 
-    try {
-      // kompatibel kalau implementasi updateNews kamu masih versi lama (id, formData)
-      const updateFnAny = updateNews as unknown as (...args: any[]) => Promise<any>;
-      const createFnAny = createNews as unknown as (...args: any[]) => Promise<any>;
-
-      let result: any;
+    try {      
+      let result;
 
       if (isEditMode && initialData?.id) {
-        result = updateFnAny.length >= 2 ? await updateFnAny(initialData.id, formData) : await updateFnAny(formData);
+        // updateNews akan mengambil ID dari formData.get("id")
+        result = await updateNews(formData);
       } else {
-        result = await createFnAny(formData);
+        result = await createNews(formData);
       }
 
-      // Jika server action pakai redirect(), Next akan lempar NEXT_REDIRECT — biarkan navigasi jalan.
       if (result?.success) {
         router.refresh();
         router.push("/admin/berita");

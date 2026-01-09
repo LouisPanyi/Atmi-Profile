@@ -1,14 +1,40 @@
-// src/app/sitemap.ts
-import type { MetadataRoute } from "next";
+import { MetadataRoute } from "next";
+import { sql } from "@vercel/postgres"; 
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://atmisolo.co.id";
-  return [
-    { url: base, lastModified: new Date(), changeFrequency: "yearly", priority: 1 },
-    { url: `${base}/tentang`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    { url: `${base}/layanan`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    { url: `${base}/produk`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-    { url: `${base}/kontak`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-    { url: `${base}/berita`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
-  ];
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://atmi.co.id";
+
+  const staticRoutes = [
+    "",
+    "/tentang",
+    "/layanan",
+    "/produk",
+    "/berita",
+    "/kontak",
+    "/kebijakan-hukum",
+  ].map((route) => ({
+    url: `${baseUrl}${route}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: route === "" ? 1 : 0.8,
+  }));
+
+  // 2. Halaman Berita Dinamis (Fetch dari DB)
+  let newsRoutes: MetadataRoute.Sitemap = [];
+  
+  try {
+    // Ambil slug dan updated_at (atau created_at jika updated ga ada)
+    const { rows } = await sql`SELECT slug, created_at FROM news ORDER BY created_at DESC`;
+    
+    newsRoutes = rows.map((item) => ({
+      url: `${baseUrl}/berita/${item.slug}`,
+      lastModified: new Date(item.created_at),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+  } catch (error) {
+    console.error("Gagal generate sitemap berita:", error);
+  }
+
+  return [...staticRoutes, ...newsRoutes];
 }

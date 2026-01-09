@@ -16,3 +16,4 @@ export function generateSlug(title: string) {
   const stamp = Date.now().toString(36).slice(-4);
   return `${base}-${stamp}`;
 }
+

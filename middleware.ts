@@ -6,9 +6,6 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = req.nextUrl;
 
-  // -----------------------------------------------------------
-  // LOGIKA 1: PROTEKSI ADMIN PANEL (Semua yang berawalan /admin)
-  // -----------------------------------------------------------
   if (pathname.startsWith('/admin')) {
     
     // A. Jika belum login -> Lempar ke Login
@@ -20,8 +17,6 @@ export async function middleware(req: NextRequest) {
 
     const userRole = token.role as string;
 
-    // B. BLOCK TOTAL UNTUK USER BIASA
-    // Jika role adalah 'user', mereka DILARANG KERAS masuk area admin manapun.
     if (userRole === 'user') {
       // Kembalikan ke halaman utama website (Home)
       return NextResponse.redirect(new URL('/', req.url));
