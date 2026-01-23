@@ -13,7 +13,7 @@ export default function DownloadButton() {
   const catalogFile = {
     displayName: "Katalog Produk 2024",
     downloadName: "katalog-produk-atmi.pdf",
-    url: "/downloads/katalog2024.pdf",
+    url: "/downloads/Katalog2024.pdf",
     category: "katalog" as const,
   };
 
